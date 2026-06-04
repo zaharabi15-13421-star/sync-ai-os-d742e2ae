@@ -11,6 +11,7 @@ import {
   encryptToken,
   exchangeCode,
   forecastSeries,
+  GA4_OAUTH_REDIRECT_URI,
   generateRecommendations,
   getValidAccessToken,
   listAnalyticsProperties,
@@ -27,7 +28,7 @@ function getPublicOrigin(): string {
 }
 
 function redirectUri() {
-  return `${getPublicOrigin()}/api/public/ga/oauth/callback`;
+  return GA4_OAUTH_REDIRECT_URI;
 }
 
 async function getCompanyForUser(userId: string, userEmail?: string | null): Promise<string> {
@@ -120,7 +121,9 @@ export const getGa4AuthUrl = createServerFn({ method: "POST" })
       source: data.source ?? "brand_intelligence",
       websiteUrl: normalizedUrl,
     });
-    return { url: buildAuthUrl({ redirectUri: redirectUri(), state }) };
+    const url = buildAuthUrl({ redirectUri: redirectUri(), state });
+    console.info("[GA4 OAuth] Authorization URL generated:", url);
+    return { url };
   });
 
 // ---- List / Select properties

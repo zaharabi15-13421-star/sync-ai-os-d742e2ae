@@ -1,7 +1,7 @@
 // Google OAuth callback — exchanges the auth code for tokens, persists them, redirects back to the dashboard.
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { encryptToken, exchangeCode, hasRequiredScopes, parseIdTokenEmail, verifyState } from "@/lib/ga.server";
+import { GA4_OAUTH_REDIRECT_URI, encryptToken, exchangeCode, hasRequiredScopes, parseIdTokenEmail, verifyState } from "@/lib/ga.server";
 
 function publicOrigin() {
   return (process.env.PUBLIC_APP_URL ?? "https://sync-ai-os.lovable.app").replace(/\/$/, "");
@@ -32,8 +32,7 @@ export const Route = createFileRoute("/api/public/ga/oauth/callback")({
         if (!parsed) return back("error", "invalid_state");
 
         try {
-          const redirectUri = `${origin}/api/public/ga/oauth/callback`;
-          const tok = await exchangeCode(code, redirectUri);
+          const tok = await exchangeCode(code, GA4_OAUTH_REDIRECT_URI);
           const { email, sub } = parseIdTokenEmail(tok.id_token);
           const grantedScopes = (tok.scope ?? "").split(" ").filter(Boolean);
 

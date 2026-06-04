@@ -104,6 +104,7 @@ export const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/analytics.readonly",
 ];
 export const GOOGLE_SCOPE_PARAM = GOOGLE_SCOPES.join(" ");
+export const GA4_OAUTH_REDIRECT_URI = "https://sync-ai-os.lovable.app/api/public/ga/oauth/callback";
 
 // Bump this whenever GOOGLE_SCOPES changes so existing connections are forced
 // to re-authenticate and receive tokens that include the new scopes.
@@ -113,6 +114,22 @@ function buildGoogleOAuthQuery(params: Record<string, string>): string {
   return Object.entries(params)
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
     .join("&");
+}
+
+function getGoogleClientId(): string {
+  const clientId = process.env.VITE_GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    throw new Error("VITE_GOOGLE_CLIENT_ID is missing. Add the Google OAuth Web Client ID in Project Settings → Secrets.");
+  }
+  return clientId;
+}
+
+function getGoogleClientSecret(): string {
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientSecret) {
+    throw new Error("GOOGLE_CLIENT_SECRET is missing. Add the matching Google OAuth Web Client Secret in Project Settings → Secrets.");
+  }
+  return clientSecret;
 }
 
 /**
@@ -138,7 +155,7 @@ export function hasRequiredScopes(scopes: string[] | null | undefined): boolean 
 
 export function buildAuthUrl(opts: { redirectUri: string; state: string; loginHint?: string }): string {
   const params: Record<string, string> = {
-    client_id: process.env.GOOGLE_OAUTH_CLIENT_ID!,
+    client_id: getGoogleClientId(),
     redirect_uri: opts.redirectUri,
     response_type: "code",
     scope: GOOGLE_SCOPE_PARAM,
@@ -153,8 +170,8 @@ export function buildAuthUrl(opts: { redirectUri: string; state: string; loginHi
 export async function exchangeCode(code: string, redirectUri: string) {
   const body = new URLSearchParams({
     code,
-    client_id: process.env.GOOGLE_OAUTH_CLIENT_ID!,
-    client_secret: process.env.GOOGLE_OAUTH_CLIENT_SECRET!,
+    client_id: getGoogleClientId(),
+    client_secret: getGoogleClientSecret(),
     redirect_uri: redirectUri,
     grant_type: "authorization_code",
   });
@@ -188,8 +205,8 @@ export class GoogleReconnectRequiredError extends Error {
 
 export async function refreshAccessToken(refreshToken: string) {
   const body = new URLSearchParams({
-    client_id: process.env.GOOGLE_OAUTH_CLIENT_ID!,
-    client_secret: process.env.GOOGLE_OAUTH_CLIENT_SECRET!,
+    client_id: getGoogleClientId(),
+    client_secret: getGoogleClientSecret(),
     refresh_token: refreshToken,
     grant_type: "refresh_token",
   });
