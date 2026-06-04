@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import {
   FeatureShell, PromptInput, AspectRatioPicker, PlatformSelect, FileDrop,
   ColorCustomizer, SearchSelect, SeoKeywordPicker, AudienceAge, OutputPanel,
-  Section, FieldLabel,
+  Section, FieldLabel, type PromptAttachment,
 } from "./shared";
 import {
   BLOG_TOPICS, WRITING_STYLES, INDUSTRIES, LANGUAGES,
