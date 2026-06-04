@@ -246,10 +246,15 @@ export const generateImage = createServerFn({ method: "POST" })
       aspectRatio: z.string().default("1:1"),
       kind: z.string().default("image"),
       extras: z.record(z.string(), z.any()).optional(),
+      attachments: z.array(z.object({
+        dataUrl: z.string(),
+        mimeType: z.string(),
+        name: z.string().optional(),
+      })).optional(),
     }).parse(data);
   })
   .handler(async ({ data }) => {
-    const { prompt, tone, style, aspectRatio, kind, extras } = data;
+    const { prompt, tone, style, aspectRatio, kind, extras, attachments } = data;
 
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) {
@@ -265,7 +270,7 @@ export const generateImage = createServerFn({ method: "POST" })
 
     const kindHints: Record<string, string> = {
       "image-lab": "High-fidelity on-brand marketing image.",
-      "poster": "Designed marketing poster with bold typography, balanced composition, and clear visual hierarchy. Render the title, subtitle, date, and contact text legibly within the poster.",
+      "poster": "Designed marketing poster with bold typography, balanced composition, and clear visual hierarchy. Render the title, subtitle, CTA, date, and contact text legibly within the poster.",
       "try-on": "Realistic catalog-grade fashion photo of a model wearing the described garments. Magazine quality, natural lighting.",
       "holography": "Futuristic 3D-style product hologram with neon ring accents on a dark glossy backdrop, with the requested floating labels.",
       "product-photo": "Studio-grade product photography, premium lighting, clean composition, shallow depth of field.",
@@ -279,8 +284,21 @@ Style: ${style}
 Tone: ${tone}
 Aspect Ratio: ${aspectRatio}
 ${extrasText ? `\nAdditional brief:\n${extrasText}` : ""}
+${attachments && attachments.length > 0 ? `\nUse the attached reference image(s) as the visual foundation — preserve the product/model identity, palette, and key details, then apply the requested style.` : ""}
 
 Make it visually striking, on-brand, and production-ready.`;
+
+    // Build multimodal content with any attached reference images.
+    const imageAttachments = (attachments || []).filter(a => a.mimeType?.startsWith("image/"));
+    const userContent: any = imageAttachments.length > 0
+      ? [
+          { type: "text", text: fullPrompt },
+          ...imageAttachments.map(a => ({
+            type: "image_url",
+            image_url: { url: a.dataUrl },
+          })),
+        ]
+      : fullPrompt;
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
       method: "POST",
@@ -289,8 +307,8 @@ Make it visually striking, on-brand, and production-ready.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        messages: [{ role: "user", content: fullPrompt }],
+        model: "google/gemini-3-pro-image-preview",
+        messages: [{ role: "user", content: userContent }],
         modalities: ["image", "text"],
       }),
     });
