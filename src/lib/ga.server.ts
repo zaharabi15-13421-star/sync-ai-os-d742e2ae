@@ -117,17 +117,19 @@ function buildGoogleOAuthQuery(params: Record<string, string>): string {
 }
 
 function getGoogleClientId(): string {
-  const clientId = process.env.VITE_GOOGLE_CLIENT_ID;
+  // Server-only — Vite's reserved VITE_ prefix can't be used for secrets, so
+  // we read the canonical GOOGLE_OAUTH_CLIENT_ID name.
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
   if (!clientId) {
-    throw new Error("VITE_GOOGLE_CLIENT_ID is missing. Add the Google OAuth Web Client ID in Project Settings → Secrets.");
+    throw new Error("GOOGLE_OAUTH_CLIENT_ID is missing. Add the Google OAuth Web Client ID in Project Settings → Secrets.");
   }
   return clientId;
 }
 
 function getGoogleClientSecret(): string {
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? process.env.GOOGLE_CLIENT_SECRET;
   if (!clientSecret) {
-    throw new Error("GOOGLE_CLIENT_SECRET is missing. Add the matching Google OAuth Web Client Secret in Project Settings → Secrets.");
+    throw new Error("GOOGLE_OAUTH_CLIENT_SECRET is missing. Add the matching Google OAuth Web Client Secret in Project Settings → Secrets.");
   }
   return clientSecret;
 }
