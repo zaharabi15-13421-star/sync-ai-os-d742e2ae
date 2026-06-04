@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Wand2, RotateCcw, RotateCw, Copy, Download, Send, RefreshCw,
   FlaskConical, Plus, X, Search, Loader2, Image as ImageIcon, Check,
+  Paperclip, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
