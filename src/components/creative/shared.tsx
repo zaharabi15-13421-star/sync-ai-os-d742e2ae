@@ -46,9 +46,34 @@ export function FieldLabel({ children, hint }: { children: ReactNode; hint?: str
 }
 
 // ====== Prompt input with AI actions + tone presets + undo/redo ======
+export type PromptAttachment = {
+  name: string;
+  mimeType: string;
+  dataUrl: string;
+  size: number;
+  kind: "image" | "file";
+};
+
+async function fileToAttachment(file: File): Promise<PromptAttachment> {
+  const dataUrl: string = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+  return {
+    name: file.name,
+    mimeType: file.type || "application/octet-stream",
+    dataUrl,
+    size: file.size,
+    kind: (file.type || "").startsWith("image/") ? "image" : "file",
+  };
+}
+
 export function PromptInput({
   value, onChange, placeholder, rows = 4, label = "Prompt",
   tone, onToneChange,
+  attachments: attachmentsProp, onAttachmentsChange,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -57,11 +82,33 @@ export function PromptInput({
   label?: string;
   tone?: string;
   onToneChange?: (t: string) => void;
+  attachments?: PromptAttachment[];
+  onAttachmentsChange?: (a: PromptAttachment[]) => void;
 }) {
   const [history, setHistory] = useState<string[]>([value]);
   const [cursor, setCursor] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
   const [customTones, setCustomTones] = useState<string[]>([]);
+  const [internalAtts, setInternalAtts] = useState<PromptAttachment[]>([]);
+  const [attachOpen, setAttachOpen] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const attachments = attachmentsProp ?? internalAtts;
+  const setAttachments = (a: PromptAttachment[]) => {
+    if (!attachmentsProp) setInternalAtts(a);
+    onAttachmentsChange?.(a);
+  };
+
+  const handleFiles = async (list: FileList | null) => {
+    if (!list || list.length === 0) return;
+    try {
+      const parsed = await Promise.all(Array.from(list).slice(0, 5).map(fileToAttachment));
+      setAttachments([...attachments, ...parsed].slice(0, 5));
+      toast.success(`${parsed.length} file${parsed.length > 1 ? "s" : ""} attached`);
+    } catch (e) {
+      toast.error("Failed to attach file");
+    }
+  };
 
   const push = (next: string) => {
     const trimmed = history.slice(0, cursor + 1);
@@ -115,9 +162,62 @@ export function PromptInput({
           }}
           placeholder={placeholder || "Describe what you want to create..."}
           rows={rows}
-          className="bg-white/5 border-white/10 resize-none"
+          className="bg-white/5 border-white/10 resize-none pl-10"
         />
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,.pdf,.txt,.md,.csv,.json,.docx"
+          className="hidden"
+          onChange={(e) => { handleFiles(e.target.files); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+        />
+        <Popover open={attachOpen} onOpenChange={setAttachOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              title="Add attachments"
+              className="absolute left-2 top-2 h-7 w-7 rounded-full bg-white/10 hover:bg-indigo-500/30 border border-white/15 hover:border-indigo-400/50 flex items-center justify-center text-foreground/80 hover:text-indigo-200 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-56 p-1.5">
+            <button
+              type="button"
+              onClick={() => { setAttachOpen(false); fileInputRef.current?.click(); }}
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-xs hover:bg-white/10 text-left"
+            >
+              <Paperclip className="h-3.5 w-3.5 text-indigo-300" />
+              <div>
+                <div className="font-medium">Add Photos & Files</div>
+                <div className="text-[10px] text-muted-foreground">Images, PDFs, docs (max 5)</div>
+              </div>
+            </button>
+          </PopoverContent>
+        </Popover>
       </div>
+      {attachments.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {attachments.map((a, i) => (
+            <div key={i} className="group relative flex items-center gap-1.5 rounded-md bg-white/5 border border-white/10 pl-1 pr-2 py-1 text-[10px]">
+              {a.kind === "image" ? (
+                <img src={a.dataUrl} alt={a.name} className="h-6 w-6 rounded object-cover" />
+              ) : (
+                <FileText className="h-4 w-4 text-indigo-300 mx-1" />
+              )}
+              <span className="truncate max-w-32">{a.name}</span>
+              <button
+                type="button"
+                onClick={() => setAttachments(attachments.filter((_, j) => j !== i))}
+                className="text-muted-foreground hover:text-rose-300"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-1.5 mt-2">
         {(["Enhance", "Rewrite", "Expand", "Shorten"] as const).map((a) => (
           <Button
