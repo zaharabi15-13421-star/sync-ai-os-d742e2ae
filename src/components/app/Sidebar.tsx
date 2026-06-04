@@ -62,7 +62,7 @@ const TOOL_TO_GROUP: Record<string, string> = CREATIVE_SUBGROUPS.reduce(
 const NAV = [
   { group: "Setup", items: [
     { to: "/dashboard/brand-dna-setup", label: "Brand DNA", icon: Plug, badge: "Start" },
-    { to: "/dashboard/website-analysis", label: "Website Analysis", icon: Globe },
+    { to: "/dashboard/website-analysis", label: "Website Intelligence", icon: Globe },
   ]},
   { group: "AI Tools", items: [
     { to: "/dashboard/brand-guideline", label: "Brand Guideline Generator", icon: FileText, badge: "New" },
