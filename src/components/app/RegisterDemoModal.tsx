@@ -45,13 +45,10 @@ type Mode = "choose" | "create" | "login" | "success";
 
 const POST_AUTH_REDIRECT_KEY = "brandsync_post_auth_redirect";
 const DASHBOARD_PATH = "/dashboard/intelligence";
-const PUBLIC_APP_ORIGIN = "https://brandmind-unify.lovable.app";
 
 function getGoogleSignInRedirectOrigin() {
-  if (typeof window === "undefined") return PUBLIC_APP_ORIGIN;
-  const { origin, hostname } = window.location;
-  if (hostname.endsWith(".lovableproject.com")) return PUBLIC_APP_ORIGIN;
-  return origin;
+  if (typeof window === "undefined") return "";
+  return window.location.origin;
 }
 
 export function RegisterDemoModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
@@ -84,7 +81,7 @@ export function RegisterDemoModal({ open, onOpenChange }: { open: boolean; onOpe
       if (result.redirected) return; // browser will navigate
       // Tokens received — session is set
       toast.success("Welcome to BrandSync AI!");
-      window.location.href = `${redirectOrigin}${DASHBOARD_PATH}`;
+      window.location.href = DASHBOARD_PATH;
     } catch (e) {
       localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.error("Google sign-in failed", {

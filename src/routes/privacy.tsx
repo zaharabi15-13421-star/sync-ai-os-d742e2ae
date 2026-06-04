@@ -36,7 +36,7 @@ function PrivacyPage() {
             <p>
               BrandSync AI (“we”, “our”, or “us”) respects your privacy and is committed to protecting your personal data.
               This Privacy Policy explains how we collect, use, store, and share information when you use our website at{" "}
-              <a href="https://brandmind-unify.lovable.app" className="text-indigo-400 hover:underline">brandmind-unify.lovable.app</a>{" "}
+              <a href="https://sync-ai-os.lovable.app" className="text-indigo-400 hover:underline">sync-ai-os.lovable.app</a>{" "}
               and the BrandSync AI platform.
             </p>
           </section>

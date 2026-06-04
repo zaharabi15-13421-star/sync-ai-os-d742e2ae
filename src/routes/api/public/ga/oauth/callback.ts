@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { encryptToken, exchangeCode, hasRequiredScopes, parseIdTokenEmail, verifyState } from "@/lib/ga.server";
 
 function publicOrigin() {
-  return (process.env.PUBLIC_APP_URL ?? "https://brandmind-unify.lovable.app").replace(/\/$/, "");
+  return (process.env.PUBLIC_APP_URL ?? "https://sync-ai-os.lovable.app").replace(/\/$/, "");
 }
 
 export const Route = createFileRoute("/api/public/ga/oauth/callback")({
