@@ -19,19 +19,17 @@ function isBlockedHostname(hostname: string): boolean {
   const h = hostname.toLowerCase();
   if (!h) return true;
   if (h === "localhost" || h.endsWith(".localhost") || h === "ip6-localhost") return true;
-  // IPv6 loopback / unspecified / link-local
   if (h === "::1" || h === "::" || h.startsWith("fe80:") || h.startsWith("fc") || h.startsWith("fd")) return true;
-  // IPv4 ranges
   const ipv4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (ipv4) {
     const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
     if (a === 10) return true;
     if (a === 127) return true;
     if (a === 0) return true;
-    if (a === 169 && b === 254) return true; // link-local / metadata
+    if (a === 169 && b === 254) return true;
     if (a === 172 && b >= 16 && b <= 31) return true;
     if (a === 192 && b === 168) return true;
-    if (a >= 224) return true; // multicast/reserved
+    if (a >= 224) return true;
   }
   return false;
 }
@@ -44,7 +42,7 @@ function normalizeUrl(input: string): string {
   try {
     parsed = new URL(withScheme);
   } catch {
-    throw new Error("Invalid website URL");
+    throw new Error("We could not reach this website — please check the link and try again.");
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     throw new Error("Only http(s) URLs are allowed");
@@ -71,8 +69,107 @@ export const getLatestWebsiteAnalysis = createServerFn({ method: "GET" })
     return { analysis: data ?? null };
   });
 
+export const getWebsiteAnalysisHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context as any;
+    const companyId = await getActiveCompanyId(supabase, userId);
+    const { data, error } = await supabase
+      .from("website_analysis")
+      .select("id, url, title, summary, status, analyzed_at, created_at")
+      .eq("company_id", companyId)
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(5);
+    if (error) throw new Error(error.message);
+    return { history: data ?? [] };
+  });
+
+export const getWebsiteAnalysisById = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    const companyId = await getActiveCompanyId(supabase, userId);
+    const { data: row, error } = await supabase
+      .from("website_analysis")
+      .select("*")
+      .eq("company_id", companyId)
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { analysis: row ?? null };
+  });
+
+export const removeWebsiteAnalysis = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    const companyId = await getActiveCompanyId(supabase, userId);
+    const { error } = await supabase
+      .from("website_analysis")
+      .delete()
+      .eq("company_id", companyId)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+const ResolveInput = z.object({ brandName: z.string().trim().min(1).max(120) });
+
+export const resolveBrandWebsite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => ResolveInput.parse(data))
+  .handler(async ({ data }) => {
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("AI service is not configured");
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content:
+              'You are a brand lookup tool. Given a brand or company name, return ONLY the official primary website URL as raw JSON: {"url":"https://..."} or {"url":null} if unknown. No prose, no markdown.',
+          },
+          { role: "user", content: data.brandName },
+        ],
+        temperature: 0,
+      }),
+    });
+    if (!res.ok) throw new Error("We could not find a website for this brand — try entering the URL directly.");
+    const json: any = await res.json();
+    const text: string = json?.choices?.[0]?.message?.content ?? "";
+    let url: string | null = null;
+    try {
+      const m = text.match(/\{[\s\S]*\}/);
+      if (m) url = JSON.parse(m[0])?.url ?? null;
+    } catch {
+      url = null;
+    }
+    if (!url) {
+      const m = text.match(/https?:\/\/[^\s"']+/);
+      url = m ? m[0] : null;
+    }
+    if (!url) throw new Error("We could not find a website for this brand — try entering the URL directly.");
+    try {
+      const normalized = normalizeUrl(url);
+      return { url: normalized };
+    } catch {
+      throw new Error("We could not find a website for this brand — try entering the URL directly.");
+    }
+  });
+
 const AnalyzeInput = z.object({
-  websiteUrl: z.string().trim().min(1).max(255).regex(/^(https?:\/\/)?[^\s]+$/i, "Invalid URL").optional(),
+  websiteUrl: z.string().trim().min(1).max(255).optional(),
+  brandName: z.string().trim().max(120).optional(),
 });
 
 export const analyzeWebsite = createServerFn({ method: "POST" })
@@ -92,9 +189,9 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
         .select("website_url")
         .eq("id", companyId)
         .maybeSingle();
-      url = normalizeUrl(company?.website_url ?? "");
+      if (company?.website_url) url = normalizeUrl(company.website_url);
     }
-    if (!url) throw new Error("No website URL configured. Set it in Brand DNA first.");
+    if (!url) throw new Error("Please enter a website link or brand name to analyse.");
 
     const started = Date.now();
     let inserted: any = null;
@@ -111,7 +208,9 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
           onlyMainContent: true,
         }),
       });
-      if (!res.ok) throw new Error(`Firecrawl error ${res.status}: ${await res.text()}`);
+      if (!res.ok) {
+        throw new Error("We could not reach this website — please check the link and try again.");
+      }
       const result: any = await res.json();
       const doc = result?.data ?? result ?? {};
       const metadata = doc.metadata ?? {};
@@ -125,7 +224,7 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
         markdown: typeof doc.markdown === "string" ? doc.markdown.slice(0, 200000) : null,
         links: Array.isArray(doc.links) ? doc.links.slice(0, 500) : [],
         branding: doc.branding ?? {},
-        metadata,
+        metadata: { ...metadata, brand_name: data.brandName ?? null },
         screenshot_url: typeof doc.screenshot === "string" && doc.screenshot.startsWith("http") ? doc.screenshot : null,
         error: null,
         analyzed_at: new Date().toISOString(),
@@ -138,6 +237,9 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
         .maybeSingle();
       if (insErr) throw new Error(insErr.message);
       inserted = row;
+
+      // Silent: save URL to companies.website_url (Brand DNA)
+      await supabase.from("companies").update({ website_url: url }).eq("id", companyId);
 
       await supabase
         .from("connected_sources")
@@ -154,7 +256,7 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
         company_id: companyId,
         platform: "website",
         status: "ok",
-        message: `Firecrawl scrape complete (${(doc.markdown ?? "").length} chars)`,
+        message: `Website analysis complete (${(doc.markdown ?? "").length} chars)`,
         finished_at: new Date().toISOString(),
         duration_ms: Date.now() - started,
       });
