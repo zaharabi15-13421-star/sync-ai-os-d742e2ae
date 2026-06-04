@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect, useMemo } from "react";
+import React, { ReactNode, useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Wand2, RotateCcw, RotateCw, Copy, Download, Send, RefreshCw,
