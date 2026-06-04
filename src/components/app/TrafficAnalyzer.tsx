@@ -622,6 +622,7 @@ function GA4Banner() {
       }
       if (url) sessionStorage.setItem("ga4_pending_url", url);
       const r = await authUrl.mutateAsync({ source: "brand_intelligence", websiteUrl: url || undefined });
+      console.log("[GA4 OAuth] Complete authorization URL:", r.url);
       window.location.href = r.url;
     } catch (e: any) {
       toast.error("Failed to start Google sign-in", { description: e?.message ?? "Unknown error" });
