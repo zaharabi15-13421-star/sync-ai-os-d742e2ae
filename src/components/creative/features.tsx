@@ -726,7 +726,7 @@ export function ThumbnailGenerator() {
     <FeatureShell title="Thumbnail Generator" subtitle="High-CTR YouTube thumbnails with overlay text"
       left={<>
         <Section title="Image">
-          <FileDrop value={img} onChange={setImg} label="Upload Image" accept="image/jpeg,image/png,image/webp" />
+          <FileDrop value={img} onChange={setImg} label="Upload Your Product or Model Image" accept="image/jpeg,image/png,image/webp" />
         </Section>
         <Section title="Thumbnail Settings">
           <div>
