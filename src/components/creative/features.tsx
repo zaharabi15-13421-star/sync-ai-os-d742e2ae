@@ -823,7 +823,18 @@ export function ScriptWriter() {
   const [age, setAge] = useState("25-35");
   const [gender, setGender] = useState("All");
   const [lang, setLang] = useState("English");
+  const [goal, setGoal] = useState<string>("");
+  const [customGoals, setCustomGoals] = useState<string[]>([]);
+  const [addingGoal, setAddingGoal] = useState(false);
+  const [newGoal, setNewGoal] = useState("");
   const wordCount = Math.round(duration[0] * 150);
+
+  const DEFAULT_GOALS = [
+    "Educational", "Entertainment", "Promotional", "Tutorial",
+    "Brand Awareness", "Lead Generation", "Product Launch", "Customer Testimonial",
+    "Social Media Engagement", "Storytelling", "Event Promotion", "Training & Development",
+  ];
+  const allGoals = [...DEFAULT_GOALS, ...customGoals];
 
   const handleGenerate = () => {
     g.run("script", {
@@ -832,6 +843,7 @@ export function ScriptWriter() {
       audience,
       tone,
       language: lang,
+      ...(goal ? { videoGoal: goal } : {}),
     });
   };
 
@@ -841,7 +853,65 @@ export function ScriptWriter() {
     <FeatureShell title="Smart Script Writer" subtitle="Structured YouTube scripts — Hook, Intro, Body, CTA, Outro"
       left={<>
         <Section title="Concept">
-          <PromptInput value={topic} onChange={setTopic} tone={tone} onToneChange={setTone} label="Video Topic / Product" />
+          <PromptInput value={topic} onChange={setTopic} tone={tone} onToneChange={setTone}
+            label="What is your video about?"
+            placeholder="e.g. How BrandSync AI replaces 10 marketing tools with one platform" />
+          <div>
+            <FieldLabel>Video Goal</FieldLabel>
+            <Select value={goal} onValueChange={(v) => { if (v !== "__add__") setGoal(v); }}>
+              <SelectTrigger className="bg-white/5 border-white/10">
+                <SelectValue placeholder="Select the primary goal of this video" />
+              </SelectTrigger>
+              <SelectContent>
+                {allGoals.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                <div className="border-t border-white/10 mt-1 pt-1">
+                  {addingGoal ? (
+                    <div className="flex items-center gap-1 px-2 py-1">
+                      <Input
+                        autoFocus
+                        value={newGoal}
+                        onChange={(e) => setNewGoal(e.target.value)}
+                        placeholder="Custom goal name"
+                        className="h-7 bg-white/5 border-white/10 text-xs"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && newGoal.trim()) {
+                            const v = newGoal.trim();
+                            setCustomGoals([...customGoals, v]);
+                            setGoal(v);
+                            setNewGoal("");
+                            setAddingGoal(false);
+                          } else if (e.key === "Escape") {
+                            setAddingGoal(false);
+                            setNewGoal("");
+                          }
+                        }}
+                      />
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
+                        if (newGoal.trim()) {
+                          const v = newGoal.trim();
+                          setCustomGoals([...customGoals, v]);
+                          setGoal(v);
+                        }
+                        setNewGoal("");
+                        setAddingGoal(false);
+                      }}>✓</Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setAddingGoal(false); setNewGoal(""); }}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAddingGoal(true); }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-indigo-300 hover:bg-white/5 rounded"
+                    >
+                      <Plus className="h-3 w-3" /> Add custom goal
+                    </button>
+                  )}
+                </div>
+              </SelectContent>
+            </Select>
+          </div>
         </Section>
         <Section title="Video Length">
           <div className="flex items-center justify-between text-xs mb-1">
@@ -855,7 +925,7 @@ export function ScriptWriter() {
         </Section>
         <Section title="Audience">
           <div>
-            <FieldLabel>Audience Type</FieldLabel>
+            <FieldLabel>Who is your target audience?</FieldLabel>
             <Input value={audience.join(", ")} onChange={(e) => setAudience(e.target.value.split(",").map(x => x.trim()))} className="bg-white/5 border-white/10" />
           </div>
           <div className="grid grid-cols-2 gap-2">
