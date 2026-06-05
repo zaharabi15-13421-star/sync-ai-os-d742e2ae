@@ -392,7 +392,7 @@ export function ColorCustomizer({ value, onChange }: { value: string[]; onChange
 
 // ====== File upload (drag-drop) ======
 export function FileDrop({
-  value, onChange, accept = "image/*", multiple = false, hint, label = "Upload",
+  value, onChange, accept = "image/*", multiple = false, hint, label = "Upload", dropHint,
 }: {
   value: File[] | File | null;
   onChange: (v: File[] | File | null) => void;
@@ -400,6 +400,7 @@ export function FileDrop({
   multiple?: boolean;
   hint?: string;
   label?: string;
+  dropHint?: string;
 }) {
   const [drag, setDrag] = useState(false);
   const files = Array.isArray(value) ? value : value ? [value] : [];
@@ -424,7 +425,7 @@ export function FileDrop({
           onChange={(e) => handleFiles(e.target.files)} />
         <ImageIcon className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
         <div className="text-muted-foreground">
-          {files.length > 0 ? `${files.length} file${files.length > 1 ? "s" : ""} selected` : "Drag & drop or click to upload"}
+          {files.length > 0 ? `${files.length} file${files.length > 1 ? "s" : ""} selected` : (dropHint || "Drag & drop or click to upload")}
         </div>
       </label>
       {files.length > 0 && (
