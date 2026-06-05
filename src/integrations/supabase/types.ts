@@ -798,6 +798,78 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          business_goal: string | null
+          city: string | null
+          company_name: string | null
+          country: string | null
+          country_code: string | null
+          created_at: string
+          id: string
+          industry: string | null
+          logo_storage_path: string | null
+          logo_url: string | null
+          phone_country_code: string | null
+          phone_country_dial: string | null
+          phone_number: string | null
+          postal_code: string | null
+          profile_completion_pct: number
+          slogan: string | null
+          street_address: string | null
+          team_size: string | null
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          business_goal?: string | null
+          city?: string | null
+          company_name?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          logo_storage_path?: string | null
+          logo_url?: string | null
+          phone_country_code?: string | null
+          phone_country_dial?: string | null
+          phone_number?: string | null
+          postal_code?: string | null
+          profile_completion_pct?: number
+          slogan?: string | null
+          street_address?: string | null
+          team_size?: string | null
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          business_goal?: string | null
+          city?: string | null
+          company_name?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          logo_storage_path?: string | null
+          logo_url?: string | null
+          phone_country_code?: string | null
+          phone_country_dial?: string | null
+          phone_number?: string | null
+          postal_code?: string | null
+          profile_completion_pct?: number
+          slogan?: string | null
+          street_address?: string | null
+          team_size?: string | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       website_analysis: {
         Row: {
           analyzed_at: string | null
