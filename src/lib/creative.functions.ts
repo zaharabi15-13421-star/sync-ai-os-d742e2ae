@@ -121,7 +121,10 @@ Requirements:
 Return ONLY the caption text - no explanation, no JSON.`,
     });
 
-    if (result.error) return { caption: null, error: result.error };
+    if (result.error) {
+      const tags = fallbackHashtags(`${description} ${platform}`, 6).map((tag) => `#${tag}`).join(" ");
+      return { caption: `${description}\n\nBuilt for ${platform} with a ${tone.toLowerCase()} tone. ${tags}`, error: null, fallback: true };
+    }
 
     return {
       caption: result.text,
@@ -160,7 +163,18 @@ Segment them into:
 Return exactly ${count} total hashtags distributed across categories. Return ONLY JSON.`,
     });
 
-    if (result.error || !result.object) return { hashtags: null, error: result.error };
+    if (result.error || !result.object) {
+      const tags = fallbackHashtags(`${industry} ${platform}`, count);
+      return {
+        hashtags: {
+          trending: tags.slice(0, Math.ceil(count / 3)),
+          niche: tags.slice(Math.ceil(count / 3), Math.ceil((count * 2) / 3)),
+          broad: tags.slice(Math.ceil((count * 2) / 3), count),
+        },
+        error: null,
+        fallback: true,
+      };
+    }
 
     return {
       hashtags: result.object,
@@ -211,7 +225,12 @@ Format as markdown with proper heading levels (# ## ###), bullet points, and emp
 Return ONLY the blog post markdown - no explanation.`,
     });
 
-    if (result.error || !result.text) return { blogPost: null, wordCount: 0, error: result.error };
+    if (result.error || !result.text) {
+      const topic = topics[0] || "Marketing Strategy";
+      const sections = Array.from({ length: headings }, (_, i) => `## ${i + 1}. ${titleCase(wordsFrom(`${topic} ${description || ""}`)[i % Math.max(1, wordsFrom(topic).length)] || "Growth")}\n\nUse this section to connect ${topic.toLowerCase()} with a clear customer problem, a practical solution, and one measurable next step.`).join("\n\n");
+      const blogPost = `# ${titleCase(topic)}\n\n${description || `A practical guide for teams working on ${topic.toLowerCase()}.`}\n\n${sections}\n\n## Conclusion\n\nTurn these ideas into a focused campaign, measure the response, and refine the message after each launch.`;
+      return { blogPost, wordCount: blogPost.split(/\s+/).length, error: null, fallback: true };
+    }
 
     return {
       blogPost: result.text,
