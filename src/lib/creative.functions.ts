@@ -4,10 +4,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
-import { lovableModel } from "@/lib/ai-gateway";
+import { createLovableAiGatewayProvider } from "@/lib/ai-gateway";
 
 // Use higher-tier Gemini Pro for the strongest text/structured outputs.
-const googleModel = () => lovableModel("google/gemini-2.5-pro");
+const googleModel = () => {
+  const apiKey = process.env.LOVABLE_API_KEY;
+  return apiKey ? createLovableAiGatewayProvider(apiKey)("google/gemini-2.5-pro") : null;
+};
 
 function getImageGenerationErrorMessage(status: number, body: string) {
   if (status === 402) return "AI credits exhausted. Add credits in Settings → Workspace → Usage.";
@@ -31,6 +34,7 @@ function getCreativeAiErrorMessage(error: unknown) {
 
 async function runTextGeneration(options: any) {
   try {
+    if (!options.model) return { text: null, error: "AI generation is not configured for this workspace." };
     const result = await generateText(options);
     return { text: result.text, error: null };
   } catch (error) {
@@ -41,6 +45,7 @@ async function runTextGeneration(options: any) {
 
 async function runObjectGeneration<T>(options: any) {
   try {
+    if (!options.model) return { object: null, error: "AI generation is not configured for this workspace." };
     const result = await generateObject(options);
     return { object: result.object as T, error: null };
   } catch (error) {
