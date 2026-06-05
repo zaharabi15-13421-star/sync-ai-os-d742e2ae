@@ -7,7 +7,7 @@ import {
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/app/ThemeToggle";
-import { RegisterDemoModal } from "@/components/app/RegisterDemoModal";
+import { AuthModal } from "@/components/auth/AuthModal";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -61,7 +61,7 @@ function Landing() {
       <Pricing />
       <CTA />
       <Footer />
-      <RegisterDemoModal open={demoOpen} onOpenChange={setDemoOpen} />
+      <AuthModal open={demoOpen} onOpenChange={setDemoOpen} />
     </div>
   );
 }
