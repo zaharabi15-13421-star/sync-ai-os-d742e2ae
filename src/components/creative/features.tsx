@@ -692,7 +692,7 @@ export function ProductDescription() {
       left={<>
         <Section title="Product">
           <div><FieldLabel>Product Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} className="bg-white/5 border-white/10" /></div>
-          <PromptInput value={desc} onChange={setDesc} tone={tone} onToneChange={setTone} label="Short Description" rows={3} />
+          <PromptInput value={desc} onChange={setDesc} tone={tone} onToneChange={setTone} label="Brief product description or key selling points" placeholder="e.g. AI-powered marketing OS that replaces HubSpot, Hootsuite, Canva, and 10+ other tools in one unified platform" rows={3} />
         </Section>
         <Section title="Output">
           <div>
