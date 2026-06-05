@@ -187,6 +187,36 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       brand_guideline_files: {
         Row: {
           created_at: string
@@ -642,6 +672,36 @@ export type Database = {
         }
         Relationships: []
       }
+      login_attempts: {
+        Row: {
+          attempts: number
+          created_at: string
+          email: string
+          id: string
+          ip_address: string | null
+          last_attempt_at: string
+          locked_until: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: string | null
+          last_attempt_at?: string
+          locked_until?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: string | null
+          last_attempt_at?: string
+          locked_until?: string | null
+        }
+        Relationships: []
+      }
       predictions: {
         Row: {
           company_id: string
@@ -806,13 +866,17 @@ export type Database = {
           country: string | null
           country_code: string | null
           created_at: string
+          email: string | null
+          email_verified: boolean
           id: string
           industry: string | null
           logo_storage_path: string | null
           logo_url: string | null
+          onboarding_completed: boolean
           phone_country_code: string | null
           phone_country_dial: string | null
           phone_number: string | null
+          plan: string
           postal_code: string | null
           profile_completion_pct: number
           slogan: string | null
@@ -829,13 +893,17 @@ export type Database = {
           country?: string | null
           country_code?: string | null
           created_at?: string
+          email?: string | null
+          email_verified?: boolean
           id?: string
           industry?: string | null
           logo_storage_path?: string | null
           logo_url?: string | null
+          onboarding_completed?: boolean
           phone_country_code?: string | null
           phone_country_dial?: string | null
           phone_number?: string | null
+          plan?: string
           postal_code?: string | null
           profile_completion_pct?: number
           slogan?: string | null
@@ -852,13 +920,17 @@ export type Database = {
           country?: string | null
           country_code?: string | null
           created_at?: string
+          email?: string | null
+          email_verified?: boolean
           id?: string
           industry?: string | null
           logo_storage_path?: string | null
           logo_url?: string | null
+          onboarding_completed?: boolean
           phone_country_code?: string | null
           phone_country_dial?: string | null
           phone_number?: string | null
+          plan?: string
           postal_code?: string | null
           profile_completion_pct?: number
           slogan?: string | null
