@@ -332,6 +332,20 @@ function ProfilePage() {
 
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [activeSection, setActiveSection] = useState("section-company");
+  const sidebarFileRef = useRef<HTMLInputElement>(null);
+
+  const handleSidebarLogoSelect = (file: File) => {
+    if (!["image/png", "image/svg+xml", "image/jpeg"].includes(file.type)) {
+      toast.error("Invalid file type", { description: "PNG, SVG, or JPG only." });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File too large", { description: "Maximum file size is 2MB." });
+      return;
+    }
+    stageLogo(file);
+    setTimeout(() => scrollTo("section-company"), 100);
+  };
 
   // Scroll spy
   useEffect(() => {
