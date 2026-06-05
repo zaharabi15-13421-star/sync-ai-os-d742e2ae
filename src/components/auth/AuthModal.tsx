@@ -487,143 +487,167 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
 }
 
 // ============================================================
-// Screen 3: Email Verification (OTP)
+// Screen 3: Email Verification (Link)
 // ============================================================
 function VerifyScreen({
-  email, userId, onSuccess, onChangeEmail, startedAt,
+  email, userId, onChangeEmail,
 }: { email: string; userId: string | null; onSuccess: () => void; onChangeEmail: () => void; startedAt: number }) {
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState(false);
-  const [errMsg, setErrMsg] = useState<string>("");
-  const [attempts, setAttempts] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [seconds, setSeconds] = useState(60);
+  const [seconds, setSeconds] = useState(45);
   const [resending, setResending] = useState(false);
-  const markVerified = useServerFn(markEmailVerified);
 
   useEffect(() => {
     if (seconds <= 0) return;
-    const t = setInterval(() => setSeconds((s) => s - 1), 1000);
+    const t = setInterval(() => setSeconds((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(t);
   }, [seconds]);
 
-  const verify = useCallback(async (code: string) => {
-    setLoading(true);
-    setError(false);
-    try {
-      const { error: vErr } = await supabase.auth.verifyOtp({
-        email,
-        token: code,
-        type: "email",
-      });
-      if (vErr) throw vErr;
-      await markVerified({ data: { email } });
-      logAuthEventFn({
-        data: {
-          eventType: "email_verification_success",
-          userId,
-          metadata: { time_to_verify_seconds: Math.round((Date.now() - startedAt) / 1000) },
-        },
-      }).catch(() => {});
-      logAuthEventFn({ data: { eventType: "signup_completed", userId, metadata: { method: "email", plan: "starter" } } }).catch(() => {});
-      onSuccess();
-    } catch (e) {
-      const next = attempts + 1;
-      setAttempts(next);
-      setError(true);
-      setOtp("");
-      logAuthEventFn({ data: { eventType: "email_verification_failed", metadata: { attempt_number: next } } }).catch(() => {});
-      if (next >= 3) setErrMsg("Too many attempts. Please request a new code.");
-      else setErrMsg("Incorrect code. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [email, attempts, markVerified, onSuccess, userId, startedAt]);
-
-  // Auto-submit when complete
-  useEffect(() => {
-    if (otp.length === 6 && !loading && attempts < 3) {
-      const t = setTimeout(() => { verify(otp); }, 300);
-      return () => clearTimeout(t);
-    }
-  }, [otp, loading, attempts, verify]);
-
   const resend = async () => {
+    if (seconds > 0 || resending) return;
     setResending(true);
     try {
-      const { error: e } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+      const { error: e } = await supabase.auth.resend({ type: "signup", email });
       if (e) throw e;
-      toast.success(`Code resent to ${email}`);
-      setSeconds(60);
-      setAttempts(0);
-      setError(false);
-      setErrMsg("");
-      logAuthEventFn({ data: { eventType: "email_verification_resent" } }).catch(() => {});
+      toast.success(`Verification email resent to ${email}`);
+      setSeconds(45);
+      logAuthEventFn({ data: { eventType: "email_verification_resent", userId } }).catch(() => {});
     } catch (err) {
-      toast.error("Couldn't resend code", { description: err instanceof Error ? err.message : undefined });
+      toast.error("Couldn't resend email", { description: err instanceof Error ? err.message : undefined });
     } finally {
       setResending(false);
     }
   };
 
-  const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  const purple = "var(--auth-purple-light)";
+  const muted = "var(--auth-text-muted)";
 
   return (
     <div className="text-center">
+      {/* 1. Icon */}
       <div
-        className="mx-auto grid place-items-center mb-4"
-        style={{ width: 56, height: 56, background: "rgba(124,58,237,0.15)", borderRadius: "50%" }}
+        className="mx-auto grid place-items-center mb-5"
+        style={{ width: 72, height: 72, border: "1.5px solid var(--auth-purple-light)", borderRadius: "50%", background: "transparent" }}
       >
-        <Mail className="h-6 w-6" style={{ color: "var(--auth-purple-light)" }} />
+        <Mail className="h-7 w-7" style={{ color: purple }} />
       </div>
-      <h2 id="auth-modal-title" className="text-[20px] font-medium">Check your inbox</h2>
-      <p className="text-[13px] mt-2" style={{ color: "var(--auth-text-muted)" }}>We sent a 6-digit code to</p>
-      <p className="text-[13px] font-medium" style={{ color: "var(--auth-purple-light)" }}>{email}</p>
-      <p className="text-[13px]" style={{ color: "var(--auth-text-muted)" }}>Enter it below to verify your account.</p>
 
-      <OTPInput value={otp} onChange={setOtp} error={error} autoFocus />
-      {error && (
-        <p className="text-[12px] -mt-2 mb-3" style={{ color: "var(--auth-red)" }}>{errMsg}</p>
+      {/* 2. Headline */}
+      <h2 id="auth-modal-title" className="text-[24px] font-bold leading-tight">Check your inbox</h2>
+
+      {/* 3. Subtitle */}
+      <p className="text-[14px] mt-3" style={{ color: muted }}>We've sent a verification link to</p>
+
+      {/* 4. Email pill */}
+      <div className="mt-2 flex justify-center">
+        <span
+          className="inline-flex items-center px-4 py-1.5 rounded-full text-[13px] font-medium"
+          style={{
+            background: "rgba(124,58,237,0.12)",
+            border: "1px solid rgba(124,58,237,0.45)",
+            color: purple,
+          }}
+        >
+          {email}
+        </span>
+      </div>
+
+      {/* 5. Instruction steps card */}
+      <div
+        className="mt-5 rounded-2xl p-4 text-left"
+        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--auth-border)" }}
+      >
+        {[
+          { p: <>Open the email from BrandSync AI</>, s: <>Subject: &ldquo;Confirm your signup&rdquo;</> },
+          { p: <>Click the <span className="font-bold">&ldquo;Verify Email&rdquo;</span> button inside</>, s: <>Link expires in 24 hours</> },
+          { p: <>You'll be redirected to your dashboard automatically</>, s: <>No code entry required</> },
+        ].map((step, i, arr) => (
+          <div key={i}>
+            <div className="flex items-start gap-3 py-2">
+              <div
+                className="shrink-0 grid place-items-center rounded-full text-[12px] font-semibold mt-0.5"
+                style={{ width: 24, height: 24, background: "rgba(124,58,237,0.15)", color: purple }}
+              >
+                {i + 1}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-semibold leading-snug">{step.p}</p>
+                <p className="text-[12.5px] mt-0.5" style={{ color: muted }}>{step.s}</p>
+              </div>
+            </div>
+            {i < arr.length - 1 && <div style={{ height: 1, background: "var(--auth-border)" }} />}
+          </div>
+        ))}
+      </div>
+
+      {/* 6. Activation banner */}
+      <div
+        className="mt-4 rounded-xl px-3 py-3 flex items-start gap-2.5 text-left"
+        style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.35)" }}
+      >
+        <ShieldCheck className="h-5 w-5 shrink-0 mt-0.5" style={{ color: "#10B981" }} />
+        <p className="text-[13px] leading-snug" style={{ color: "#10B981" }}>
+          Once verified, your BrandSync AI account will be fully activated
+        </p>
+      </div>
+
+      {/* 7. Resend timer line */}
+      <div className="mt-5" style={{ borderTop: "1px solid var(--auth-border)" }} />
+      {seconds > 0 && (
+        <p className="text-[12.5px] mt-3" style={{ color: muted }}>
+          Resend available in {fmtTime(seconds)}
+        </p>
       )}
 
-      <PrimaryButton
+      {/* 8. Resend button */}
+      <button
         type="button"
-        onClick={() => verify(otp)}
-        loading={loading}
-        disabled={otp.length !== 6 || attempts >= 3}
+        onClick={resend}
+        disabled={seconds > 0 || resending}
+        className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-medium transition disabled:cursor-not-allowed"
+        style={{
+          background: "transparent",
+          border: "1px solid var(--auth-border)",
+          color: "var(--auth-text)",
+          opacity: seconds > 0 || resending ? 0.4 : 1,
+        }}
       >
-        {loading ? (
-          <span className="inline-flex items-center gap-2 justify-center">
-            <Loader2 className="h-4 w-4 animate-spin" /> Verifying…
-          </span>
-        ) : "Verify email"}
-      </PrimaryButton>
+        {resending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+        Resend verification email
+      </button>
 
-      <p className="mt-4 text-[12px]" style={{ color: "var(--auth-text-muted)" }}>
-        Didn't receive it?{" "}
-        <button
-          type="button"
-          disabled={seconds > 0 || resending}
-          onClick={resend}
-          style={{ color: seconds > 0 ? "var(--auth-text-disabled)" : "var(--auth-purple-light)" }}
-          className="underline-offset-2 hover:underline disabled:no-underline"
-        >
-          Resend code
-        </button>
-        {" · "}{fmtTime(seconds)}
-      </p>
-
+      {/* 9. Change email button */}
       <button
         type="button"
         onClick={onChangeEmail}
-        className="mt-3 text-[13px]"
-        style={{ color: "var(--auth-text-muted)" }}
+        className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-medium"
+        style={{ background: "transparent", border: "1px solid var(--auth-border)", color: "var(--auth-text)" }}
       >
+        <Pencil className="h-4 w-4" />
         Change email address
       </button>
+
+      {/* 10. Footer help */}
+      <div className="mt-5" style={{ borderTop: "1px solid var(--auth-border)" }} />
+      <div className="mt-3 flex items-center justify-center gap-1.5 text-[13px]" style={{ color: muted }}>
+        <HelpCircle className="h-4 w-4" />
+        <span>Didn't get the email?</span>
+        <a
+          href="#"
+          onClick={(e) => e.preventDefault()}
+          className="font-medium hover:underline"
+          style={{ color: purple }}
+        >
+          Check spam folder
+        </a>
+      </div>
+      <p className="mt-1.5 text-[12px] leading-snug" style={{ color: muted }}>
+        Sometimes verification emails land in spam.<br />
+        Check your spam or junk folder if you don't see it.
+      </p>
     </div>
   );
 }
+
 
 // ============================================================
 // Screen 4: Success
