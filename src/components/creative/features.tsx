@@ -35,30 +35,36 @@ function useGenerator() {
     setLoading(true);
     try {
       let result;
+      let fallbackGenerated = false;
       switch (kind) {
         case "caption":
           result = await generateCaption({ data: inputData });
           if (result.error) throw new Error(result.error);
+          fallbackGenerated = !!result.fallback;
           setOutput({ caption: result.caption });
           break;
         case "hashtags":
           result = await generateHashtags({ data: inputData });
           if (result.error) throw new Error(result.error);
+          fallbackGenerated = !!result.fallback;
           setOutput({ hashtags: result.hashtags });
           break;
         case "blog":
           result = await generateBlog({ data: inputData });
           if (result.error) throw new Error(result.error);
+          fallbackGenerated = !!result.fallback;
           setOutput({ blogPost: result.blogPost, wordCount: result.wordCount });
           break;
         case "product-desc":
           result = await generateProductDescription({ data: inputData });
           if (result.error) throw new Error(result.error);
+          fallbackGenerated = !!result.fallback;
           setOutput({ description: result.description });
           break;
         case "script":
           result = await generateScript({ data: inputData });
           if (result.error) throw new Error(result.error);
+          fallbackGenerated = !!result.fallback;
           setOutput({ script: result.script });
           break;
         case "image-lab":
@@ -73,13 +79,14 @@ function useGenerator() {
             toast.error(result.error);
             return;
           }
+          fallbackGenerated = !!result.fallback;
           setOutput({ imageUrl: result.imageUrl });
           break;
         default:
           throw new Error(`Unknown generator type: ${kind}`);
       }
       setGenerated(true);
-      toast.success("Generated with AI");
+      toast.success(fallbackGenerated ? "Generated in free mode" : "Generated with AI");
     } catch (error) {
       console.error("Generation failed:", error);
       const msg = error instanceof Error ? error.message : "Failed to generate. Please try again.";
