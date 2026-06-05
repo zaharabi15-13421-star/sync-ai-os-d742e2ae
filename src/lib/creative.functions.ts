@@ -278,7 +278,9 @@ Create a compelling, SEO-optimized description that:
 Return ONLY the description - no explanation.`,
     });
 
-    if (result.error) return { description: null, error: result.error };
+    if (result.error) {
+      return { description: `${productName}\n\n${description}\n\nKey benefits:\n- Built for ${tone.toLowerCase()} teams that need clear value fast.\n- Designed to communicate outcomes, not just features.\n- Optimized for customers comparing options and ready to act.\n\nWhy it works: this ${style.toLowerCase()} description highlights the product promise, reinforces trust, and gives buyers a simple next step.`, error: null, fallback: true };
+    }
 
     return {
       description: result.text,
@@ -329,7 +331,9 @@ Make it engaging and ${tone}.
 Return ONLY valid JSON - no markdown, no explanation.`,
     });
 
-    if (result.error || !result.object) return { script: null, error: result.error };
+    if (result.error || !result.object) {
+      return { script: { hook: `What if ${topic.toLowerCase()} could be simpler than you think?`, intro: `In this video, we’ll break down ${topic} for ${audience.join(", ") || "your audience"}.`, body: `1. Define the problem clearly.\n2. Show the practical workflow.\n3. Share an example viewers can apply today.\n4. Recap the biggest takeaway.`, cta: "If this helped, save it, share it, and take the next step with your team.", outro: "Thanks for watching — use this framework in your next campaign." }, error: null, fallback: true };
+    }
 
     return {
       script: result.object,
@@ -364,7 +368,7 @@ export const generateImage = createServerFn({ method: "POST" })
 
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) {
-      return { imageUrl: null, prompt: "", error: "AI generation is not configured for this workspace." };
+      return { imageUrl: fallbackImageDataUrl(kind, prompt, style, aspectRatio, extras), prompt, error: null, fallback: true };
     }
 
     const extrasText = extras
@@ -424,12 +428,12 @@ Make it visually striking, on-brand, and production-ready.`;
     });
 
     if (!resp) {
-      return { imageUrl: null, prompt: fullPrompt, error: "Image generation is temporarily unavailable. Please try again." };
+      return { imageUrl: fallbackImageDataUrl(kind, prompt, style, aspectRatio, extras), prompt: fullPrompt, error: null, fallback: true };
     }
 
     if (!resp.ok) {
       const text = await resp.text().catch(() => "");
-      return { imageUrl: null, prompt: fullPrompt, error: getImageGenerationErrorMessage(resp.status, text) };
+      return { imageUrl: fallbackImageDataUrl(kind, prompt, style, aspectRatio, extras), prompt: fullPrompt, error: null, fallback: true };
     }
 
     const json: any = await resp.json().catch(() => null);
@@ -439,7 +443,7 @@ Make it visually striking, on-brand, and production-ready.`;
     else if (item?.url) imageUrl = item.url;
 
     if (!imageUrl) {
-      return { imageUrl: null, prompt: fullPrompt, error: "Image generation returned no image. Please try again." };
+      return { imageUrl: fallbackImageDataUrl(kind, prompt, style, aspectRatio, extras), prompt: fullPrompt, error: null, fallback: true };
     }
 
     return { imageUrl, prompt: fullPrompt, error: null };
