@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, Mail, CheckCircle2, KeyRound, LockOpen, AlertCircle, Loader2 } from "lucide-react";
+import { X, Sparkles, Mail, CheckCircle2, KeyRound, LockOpen, AlertCircle, Loader2, ShieldCheck, RefreshCw, Pencil, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import {
