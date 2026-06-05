@@ -1,4 +1,4 @@
-import { Bell, Search, Sparkles, ChevronDown, AlertTriangle, LogOut, Plug } from "lucide-react";
+import { Bell, Search, Sparkles, ChevronDown, AlertTriangle, LogOut, Plug, User } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -92,6 +92,10 @@ export function Topbar() {
               <DropdownMenuContent align="end" className="w-48">
                 {user ? (
                   <>
+                    <DropdownMenuItem onClick={() => navigate({ to: "/dashboard/profile" })}>
+                      <User className="h-3.5 w-3.5 mr-2" /> Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem disabled className="text-xs opacity-70">{user.email}</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={async () => { await signOut(); navigate({ to: "/" }); }}>

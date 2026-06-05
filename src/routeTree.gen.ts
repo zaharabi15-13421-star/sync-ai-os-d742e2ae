@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardWebsiteAnalysisRouteImport } from './routes/dashboard.website-analysis'
 import { Route as DashboardSimulationRouteImport } from './routes/dashboard.simulation'
 import { Route as DashboardReputationRouteImport } from './routes/dashboard.reputation'
+import { Route as DashboardProfileRouteImport } from './routes/dashboard.profile'
 import { Route as DashboardIntelligenceRouteImport } from './routes/dashboard.intelligence'
 import { Route as DashboardInfluencersRouteImport } from './routes/dashboard.influencers'
 import { Route as DashboardCrmRouteImport } from './routes/dashboard.crm'
@@ -62,6 +63,11 @@ const DashboardSimulationRoute = DashboardSimulationRouteImport.update({
 const DashboardReputationRoute = DashboardReputationRouteImport.update({
   id: '/reputation',
   path: '/reputation',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardProfileRoute = DashboardProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardIntelligenceRoute = DashboardIntelligenceRouteImport.update({
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/crm': typeof DashboardCrmRoute
   '/dashboard/influencers': typeof DashboardInfluencersRoute
   '/dashboard/intelligence': typeof DashboardIntelligenceRoute
+  '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/reputation': typeof DashboardReputationRoute
   '/dashboard/simulation': typeof DashboardSimulationRoute
   '/dashboard/website-analysis': typeof DashboardWebsiteAnalysisRoute
@@ -195,6 +202,7 @@ export interface FileRoutesByTo {
   '/dashboard/crm': typeof DashboardCrmRoute
   '/dashboard/influencers': typeof DashboardInfluencersRoute
   '/dashboard/intelligence': typeof DashboardIntelligenceRoute
+  '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/reputation': typeof DashboardReputationRoute
   '/dashboard/simulation': typeof DashboardSimulationRoute
   '/dashboard/website-analysis': typeof DashboardWebsiteAnalysisRoute
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/dashboard/crm': typeof DashboardCrmRoute
   '/dashboard/influencers': typeof DashboardInfluencersRoute
   '/dashboard/intelligence': typeof DashboardIntelligenceRoute
+  '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/reputation': typeof DashboardReputationRoute
   '/dashboard/simulation': typeof DashboardSimulationRoute
   '/dashboard/website-analysis': typeof DashboardWebsiteAnalysisRoute
@@ -248,6 +257,7 @@ export interface FileRouteTypes {
     | '/dashboard/crm'
     | '/dashboard/influencers'
     | '/dashboard/intelligence'
+    | '/dashboard/profile'
     | '/dashboard/reputation'
     | '/dashboard/simulation'
     | '/dashboard/website-analysis'
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/dashboard/crm'
     | '/dashboard/influencers'
     | '/dashboard/intelligence'
+    | '/dashboard/profile'
     | '/dashboard/reputation'
     | '/dashboard/simulation'
     | '/dashboard/website-analysis'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/dashboard/crm'
     | '/dashboard/influencers'
     | '/dashboard/intelligence'
+    | '/dashboard/profile'
     | '/dashboard/reputation'
     | '/dashboard/simulation'
     | '/dashboard/website-analysis'
@@ -359,6 +371,13 @@ declare module '@tanstack/react-router' {
       path: '/reputation'
       fullPath: '/dashboard/reputation'
       preLoaderRoute: typeof DashboardReputationRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/profile': {
+      id: '/dashboard/profile'
+      path: '/profile'
+      fullPath: '/dashboard/profile'
+      preLoaderRoute: typeof DashboardProfileRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/intelligence': {
@@ -521,6 +540,7 @@ interface DashboardRouteChildren {
   DashboardCrmRoute: typeof DashboardCrmRoute
   DashboardInfluencersRoute: typeof DashboardInfluencersRoute
   DashboardIntelligenceRoute: typeof DashboardIntelligenceRoute
+  DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardReputationRoute: typeof DashboardReputationRoute
   DashboardSimulationRoute: typeof DashboardSimulationRoute
   DashboardWebsiteAnalysisRoute: typeof DashboardWebsiteAnalysisRoute
@@ -538,6 +558,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardCrmRoute: DashboardCrmRoute,
   DashboardInfluencersRoute: DashboardInfluencersRoute,
   DashboardIntelligenceRoute: DashboardIntelligenceRoute,
+  DashboardProfileRoute: DashboardProfileRoute,
   DashboardReputationRoute: DashboardReputationRoute,
   DashboardSimulationRoute: DashboardSimulationRoute,
   DashboardWebsiteAnalysisRoute: DashboardWebsiteAnalysisRoute,
