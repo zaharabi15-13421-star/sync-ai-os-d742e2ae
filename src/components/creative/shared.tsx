@@ -134,6 +134,10 @@ export function PromptInput({
     setBusy(action);
     try {
       const result = await enhancePrompt({ data: { text: value, action } });
+      if (result.error || !result.enhancedText) {
+        toast.error(result.error || "Failed to enhance. Please try again.");
+        return;
+      }
       push(result.enhancedText);
       toast.success(`${action}d with AI`);
     } catch (error) {
@@ -459,7 +463,7 @@ export function SeoKeywordPicker({ value, onChange }: { value: string[]; onChang
         setLoading(true);
         try {
           const result = await generateSeoKeywords({ data: { query: q, count: 10 } });
-          setSug(result.keywords);
+          setSug(result.error ? [] : result.keywords);
         } catch (error) {
           console.error("SEO keywords failed:", error);
           setSug([]);
@@ -575,7 +579,7 @@ export function OutputPanel({
     if (generated && contentForCritique && kind !== "image") {
       setLoadingCritique(true);
       critiqueContent({ data: { content: contentForCritique } })
-        .then(setCritique)
+        .then((result) => setCritique(result.critique ? result : null))
         .catch((error) => {
           console.error("Critique failed:", error);
           setCritique(null);
@@ -645,7 +649,7 @@ export function OutputPanel({
         </AnimatePresence>
       </div>
 
-      {critique && (
+      {critique?.critique && (
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-indigo-300 mb-2">
             <Sparkles className="h-4 w-4" /> AI Critique

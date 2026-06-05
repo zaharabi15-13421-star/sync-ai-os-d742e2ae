@@ -4,16 +4,54 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
-import { lovableModel } from "@/lib/ai-gateway";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createLovableAiGatewayProvider } from "@/lib/ai-gateway";
 
 // Use higher-tier Gemini Pro for the strongest text/structured outputs.
-const googleModel = () => lovableModel("google/gemini-2.5-pro");
+const googleModel = () => {
+  const apiKey = process.env.LOVABLE_API_KEY;
+  return apiKey ? createLovableAiGatewayProvider(apiKey)("google/gemini-2.5-pro") : null;
+};
 
 function getImageGenerationErrorMessage(status: number, body: string) {
   if (status === 402) return "AI credits exhausted. Add credits in Settings → Workspace → Usage.";
   if (status === 429) return "Rate limit exceeded. Please try again in a moment.";
   return `Image generation failed (${status}): ${body.slice(0, 200)}`;
+}
+
+function getCreativeAiErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  if (/AI credits exhausted|Payment Required|402/i.test(message)) {
+    return "AI credits exhausted. Add credits in Settings → Workspace → Usage.";
+  }
+  if (/rate limit|429/i.test(message)) {
+    return "Rate limit exceeded. Please try again in a moment.";
+  }
+  if (/LOVABLE_API_KEY|api key|unauthorized|401/i.test(message)) {
+    return "AI generation is not configured for this workspace.";
+  }
+  return "AI generation is temporarily unavailable. Please try again.";
+}
+
+async function runTextGeneration(options: any) {
+  try {
+    if (!options.model) return { text: null, error: "AI generation is not configured for this workspace." };
+    const result = await generateText(options);
+    return { text: result.text, error: null };
+  } catch (error) {
+    console.error("Creative text generation failed:", error);
+    return { text: null, error: getCreativeAiErrorMessage(error) };
+  }
+}
+
+async function runObjectGeneration<T>(options: any) {
+  try {
+    if (!options.model) return { object: null, error: "AI generation is not configured for this workspace." };
+    const result = await generateObject(options);
+    return { object: result.object as T, error: null };
+  } catch (error) {
+    console.error("Creative structured generation failed:", error);
+    return { object: null, error: getCreativeAiErrorMessage(error) };
+  }
 }
 
 // =================== TEXT GENERATION FUNCTIONS ===================
@@ -34,7 +72,7 @@ export const generateCaption = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { description, platform, tone, audience, language } = data;
 
-    const result = await generateText({
+    const result = await runTextGeneration({
       model: googleModel(),
       prompt: `Generate a ${tone} social media caption for ${platform} in ${language}.
 
@@ -55,8 +93,11 @@ Requirements:
 Return ONLY the caption text - no explanation, no JSON.`,
     });
 
+    if (result.error) return { caption: null, error: result.error };
+
     return {
       caption: result.text,
+      error: null,
     };
   });
 
@@ -74,7 +115,7 @@ export const generateHashtags = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { industry, platform, count } = data;
 
-    const result = await generateObject({
+    const result = await runObjectGeneration<{ trending: string[]; niche: string[]; broad: string[] }>({
       model: googleModel(),
       schema: z.object({
         trending: z.array(z.string()).min(2),
@@ -91,8 +132,11 @@ Segment them into:
 Return exactly ${count} total hashtags distributed across categories. Return ONLY JSON.`,
     });
 
+    if (result.error || !result.object) return { hashtags: null, error: result.error };
+
     return {
       hashtags: result.object,
+      error: null,
     };
   });
 
@@ -118,7 +162,7 @@ export const generateBlog = createServerFn({ method: "POST" })
     const wordCountMatch = wordCount.match(/\d+-?(\d+)?/);
     const targetWords = wordCountMatch ? (wordCountMatch[2] ? ((+wordCountMatch[1] + +wordCountMatch[2]) / 2) : +wordCountMatch[1]) : 1200;
 
-    const result = await generateText({
+    const result = await runTextGeneration({
       model: googleModel(),
       prompt: `Write a ${style} blog post in ${language} approximately ${targetWords} words.
 
@@ -139,9 +183,12 @@ Format as markdown with proper heading levels (# ## ###), bullet points, and emp
 Return ONLY the blog post markdown - no explanation.`,
     });
 
+    if (result.error || !result.text) return { blogPost: null, wordCount: 0, error: result.error };
+
     return {
       blogPost: result.text,
       wordCount: result.text.split(/\s+/).length,
+      error: null,
     };
   });
 
@@ -163,7 +210,7 @@ export const generateProductDescription = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { productName, description, tone, length, keywords, style, language } = data;
 
-    const result = await generateText({
+    const result = await runTextGeneration({
       model: googleModel(),
       prompt: `Write a ${style} product description in ${language} for:
 
@@ -184,8 +231,11 @@ Create a compelling, SEO-optimized description that:
 Return ONLY the description - no explanation.`,
     });
 
+    if (result.error) return { description: null, error: result.error };
+
     return {
       description: result.text,
+      error: null,
     };
   });
 
@@ -205,7 +255,7 @@ export const generateScript = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { topic, duration, audience, tone, language } = data;
 
-    const result = await generateObject({
+    const result = await runObjectGeneration<{ hook: string; intro: string; body: string; cta: string; outro: string }>({
       model: googleModel(),
       schema: z.object({
         hook: z.string().describe("15-second attention grabber"),
@@ -232,8 +282,11 @@ Make it engaging and ${tone}.
 Return ONLY valid JSON - no markdown, no explanation.`,
     });
 
+    if (result.error || !result.object) return { script: null, error: result.error };
+
     return {
       script: result.object,
+      error: null,
     };
   });
 
@@ -360,7 +413,7 @@ export const enhancePrompt = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { text, action } = data;
 
-    const result = await generateText({
+    const result = await runTextGeneration({
       model: googleModel(),
       prompt: `${action} the following text:
 
@@ -379,8 +432,11 @@ Make it better while keeping the core meaning. ${
 Return ONLY the enhanced text - no explanation.`,
     });
 
+    if (result.error) return { enhancedText: null, error: result.error };
+
     return {
       enhancedText: result.text,
+      error: null,
     };
   });
 
@@ -397,7 +453,7 @@ export const critiqueContent = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { content, platform } = data;
 
-    const result = await generateObject({
+    const result = await runObjectGeneration<{ hookStrength: number; brandVoiceMatch: number; predictedCtr: number; benchmark: number; readabilityGrade: number; seoScore: number; optimizationTip: string }>({
       model: googleModel(),
       schema: z.object({
         hookStrength: z.number().min(1).max(10),
@@ -424,8 +480,11 @@ Provide one actionable optimization tip.
 Return ONLY valid JSON - no markdown, no explanation.`,
     });
 
+    if (result.error || !result.object) return { critique: null, error: result.error };
+
     return {
       critique: result.object,
+      error: null,
     };
   });
 
@@ -442,7 +501,7 @@ export const generateSeoKeywords = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { query, count } = data;
 
-    const result = await generateObject({
+    const result = await runObjectGeneration<{ keywords: Array<{ keyword: string; volume: number; competition: "Low" | "Medium" | "High" }> }>({
       model: googleModel(),
       schema: z.object({
         keywords: z.array(
@@ -463,8 +522,11 @@ For each keyword, provide:
 Return realistic SEO data for content optimization. Return ONLY valid JSON - no markdown.`,
     });
 
+    if (result.error || !result.object) return { keywords: [], error: result.error };
+
     return {
       keywords: result.object.keywords,
+      error: null,
     };
   });
 
