@@ -63,6 +63,11 @@ function useGenerator() {
         case "holography":
         case "product-photo":
           result = await generateImage({ data: { ...inputData, kind } });
+          if (result.error) {
+            setOutput({ error: result.error });
+            toast.error(result.error);
+            return;
+          }
           setOutput({ imageUrl: result.imageUrl });
           break;
         default:

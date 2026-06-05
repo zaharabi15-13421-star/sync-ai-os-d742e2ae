@@ -10,6 +10,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // Use higher-tier Gemini Pro for the strongest text/structured outputs.
 const googleModel = () => lovableModel("google/gemini-2.5-pro");
 
+function getImageGenerationErrorMessage(status: number, body: string) {
+  if (status === 402) return "AI credits exhausted. Add credits in Settings → Workspace → Usage.";
+  if (status === 429) return "Rate limit exceeded. Please try again in a moment.";
+  return `Image generation failed (${status}): ${body.slice(0, 200)}`;
+}
+
 // =================== TEXT GENERATION FUNCTIONS ===================
 
 /**
@@ -258,7 +264,7 @@ export const generateImage = createServerFn({ method: "POST" })
 
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      return { imageUrl: null, prompt: "", error: "AI generation is not configured for this workspace." };
     }
 
     const extrasText = extras
@@ -303,7 +309,8 @@ Make it visually striking, on-brand, and production-ready.`;
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        "Lovable-API-Key": apiKey,
+        "X-Lovable-AIG-SDK": "vercel-ai-sdk",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -311,24 +318,31 @@ Make it visually striking, on-brand, and production-ready.`;
         messages: [{ role: "user", content: userContent }],
         modalities: ["image", "text"],
       }),
+    }).catch((error) => {
+      console.error("Image generation request failed:", error);
+      return null;
     });
+
+    if (!resp) {
+      return { imageUrl: null, prompt: fullPrompt, error: "Image generation is temporarily unavailable. Please try again." };
+    }
 
     if (!resp.ok) {
       const text = await resp.text().catch(() => "");
-      if (resp.status === 429) throw new Error("Rate limit exceeded. Please try again in a moment.");
-      if (resp.status === 402) throw new Error("AI credits exhausted. Add credits in Settings → Workspace → Usage.");
-      throw new Error(`Image generation failed (${resp.status}): ${text.slice(0, 200)}`);
+      return { imageUrl: null, prompt: fullPrompt, error: getImageGenerationErrorMessage(resp.status, text) };
     }
 
-    const json: any = await resp.json();
+    const json: any = await resp.json().catch(() => null);
     const item = json?.data?.[0];
     let imageUrl: string | null = null;
     if (item?.b64_json) imageUrl = `data:image/png;base64,${item.b64_json}`;
     else if (item?.url) imageUrl = item.url;
 
-    if (!imageUrl) throw new Error("Image generation returned no data");
+    if (!imageUrl) {
+      return { imageUrl: null, prompt: fullPrompt, error: "Image generation returned no image. Please try again." };
+    }
 
-    return { imageUrl, prompt: fullPrompt };
+    return { imageUrl, prompt: fullPrompt, error: null };
   });
 
 // =================== ENHANCEMENT FUNCTIONS ===================
