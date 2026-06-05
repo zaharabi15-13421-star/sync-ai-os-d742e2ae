@@ -38,22 +38,27 @@ function useGenerator() {
       switch (kind) {
         case "caption":
           result = await generateCaption({ data: inputData });
+          if (result.error) throw new Error(result.error);
           setOutput({ caption: result.caption });
           break;
         case "hashtags":
           result = await generateHashtags({ data: inputData });
+          if (result.error) throw new Error(result.error);
           setOutput({ hashtags: result.hashtags });
           break;
         case "blog":
           result = await generateBlog({ data: inputData });
+          if (result.error) throw new Error(result.error);
           setOutput({ blogPost: result.blogPost, wordCount: result.wordCount });
           break;
         case "product-desc":
           result = await generateProductDescription({ data: inputData });
+          if (result.error) throw new Error(result.error);
           setOutput({ description: result.description });
           break;
         case "script":
           result = await generateScript({ data: inputData });
+          if (result.error) throw new Error(result.error);
           setOutput({ script: result.script });
           break;
         case "image-lab":
