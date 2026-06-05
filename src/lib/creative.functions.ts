@@ -15,7 +15,7 @@ const googleModel = () => {
 function getCreativeAiErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : String(error ?? "");
   if (/AI credits exhausted|Payment Required|402/i.test(message)) {
-    return "AI credits exhausted. Add credits in Settings → Workspace → Usage.";
+    return "FREE_MODE_FALLBACK";
   }
   if (/rate limit|429/i.test(message)) {
     return "Rate limit exceeded. Please try again in a moment.";
