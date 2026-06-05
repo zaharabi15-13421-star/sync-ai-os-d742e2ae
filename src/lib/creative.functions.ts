@@ -157,7 +157,7 @@ export const generateBlog = createServerFn({ method: "POST" })
     const wordCountMatch = wordCount.match(/\d+-?(\d+)?/);
     const targetWords = wordCountMatch ? (wordCountMatch[2] ? ((+wordCountMatch[1] + +wordCountMatch[2]) / 2) : +wordCountMatch[1]) : 1200;
 
-    const result = await generateText({
+    const result = await runTextGeneration({
       model: googleModel(),
       prompt: `Write a ${style} blog post in ${language} approximately ${targetWords} words.
 
@@ -178,9 +178,12 @@ Format as markdown with proper heading levels (# ## ###), bullet points, and emp
 Return ONLY the blog post markdown - no explanation.`,
     });
 
+    if (result.error || !result.text) return { blogPost: null, wordCount: 0, error: result.error };
+
     return {
       blogPost: result.text,
       wordCount: result.text.split(/\s+/).length,
+      error: null,
     };
   });
 
@@ -202,7 +205,7 @@ export const generateProductDescription = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { productName, description, tone, length, keywords, style, language } = data;
 
-    const result = await generateText({
+    const result = await runTextGeneration({
       model: googleModel(),
       prompt: `Write a ${style} product description in ${language} for:
 
@@ -223,8 +226,11 @@ Create a compelling, SEO-optimized description that:
 Return ONLY the description - no explanation.`,
     });
 
+    if (result.error) return { description: null, error: result.error };
+
     return {
       description: result.text,
+      error: null,
     };
   });
 
@@ -244,7 +250,7 @@ export const generateScript = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { topic, duration, audience, tone, language } = data;
 
-    const result = await generateObject({
+    const result = await runObjectGeneration<{ hook: string; intro: string; body: string; cta: string; outro: string }>({
       model: googleModel(),
       schema: z.object({
         hook: z.string().describe("15-second attention grabber"),
@@ -271,8 +277,11 @@ Make it engaging and ${tone}.
 Return ONLY valid JSON - no markdown, no explanation.`,
     });
 
+    if (result.error || !result.object) return { script: null, error: result.error };
+
     return {
       script: result.object,
+      error: null,
     };
   });
 
