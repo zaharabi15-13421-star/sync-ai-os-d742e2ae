@@ -740,22 +740,36 @@ export function ThumbnailGenerator() {
     <FeatureShell title="Thumbnail Generator" subtitle="High-CTR YouTube thumbnails with overlay text"
       left={<>
         <Section title="Image">
-          <FileDrop value={img} onChange={setImg} label="Upload Your Product or Model Image" accept="image/jpeg,image/png,image/webp" />
+          <FileDrop value={img} onChange={setImg} label="Upload a background or reference image" dropHint="Drop your image here or click to browse · JPG / PNG" accept="image/jpeg,image/png,image/webp" />
         </Section>
         <Section title="Thumbnail Settings">
           <div>
-            <FieldLabel hint="AI will suggest from image">Headline</FieldLabel>
+            <FieldLabel hint="AI will suggest from image">Thumbnail Headline</FieldLabel>
             <Input value={headline} onChange={(e) => setHeadline(e.target.value)} className="bg-white/5 border-white/10" />
           </div>
           <div>
-            <FieldLabel hint="Auto-suggested">Subheading</FieldLabel>
+            <FieldLabel hint="Auto-suggested">Thumbnail Subheading</FieldLabel>
             <Input value={sub} onChange={(e) => setSub(e.target.value)} className="bg-white/5 border-white/10" />
           </div>
           <div>
-            <FieldLabel>Style</FieldLabel>
+            <FieldLabel>Thumbnail Style</FieldLabel>
             <Select value={style} onValueChange={setStyle}>
               <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
-              <SelectContent>{["Professional","Bold","Minimal","Cinematic","Viral","Gaming","Tech","Luxury","Educational","Fun"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                {[
+                  { v: "Professional", d: "Clean and business-focused" },
+                  { v: "Bold", d: "Eye-catching and attention-grabbing" },
+                  { v: "Fun", d: "Playful and engaging" },
+                  { v: "Minimal", d: "Simple and elegant" },
+                ].map(s => (
+                  <SelectItem key={s.v} value={s.v}>
+                    <div className="flex flex-col">
+                      <span>{s.v}</span>
+                      <span className="text-[10px] text-muted-foreground">{s.d}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
           <div>
