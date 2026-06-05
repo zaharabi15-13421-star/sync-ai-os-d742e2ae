@@ -119,7 +119,7 @@ export function ImageLab() {
   const [tone, setTone] = useState("Premium");
   const [platforms, setPlatforms] = useState<string[]>(["Instagram"]);
   const [ratio, setRatio] = useState("1:1");
-  const [style, setStyle] = useState("Editorial");
+  const [style, setStyle] = useState("None");
   const [atts, setAtts] = useState<PromptAttachment[]>([]);
   const runGen = () => g.run("image-lab", { prompt, tone, style, aspectRatio: ratio, extras: { platforms }, attachments: atts });
   return (
@@ -127,6 +127,8 @@ export function ImageLab() {
       left={<>
         <Section title="Prompt">
           <PromptInput value={prompt} onChange={setPrompt} tone={tone} onToneChange={setTone}
+            label="Describe the image you want to create"
+            placeholder="e.g. A sleek smartphone on a marble surface, soft studio lighting, brand-aligned color palette"
             attachments={atts} onAttachmentsChange={setAtts} />
         </Section>
         <Section title="Targeting">
@@ -137,7 +139,7 @@ export function ImageLab() {
             <Select value={style} onValueChange={setStyle}>
               <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["Editorial", "Cinematic", "Studio", "Lifestyle", "Bold Pop", "Soft Pastel", "Vintage Film"].map(s =>
+                {["None", "Editorial", "Cinematic", "Studio", "Lifestyle", "Bold Pop", "Soft Pastel", "Vintage Film"].map(s =>
                   <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
