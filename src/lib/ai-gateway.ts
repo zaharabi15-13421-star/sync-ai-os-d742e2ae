@@ -12,7 +12,8 @@ export const createLovableAiGatewayProvider = (lovableApiKey: string) =>
     name: "lovable",
     baseURL: "https://ai.gateway.lovable.dev/v1",
     headers: {
-      Authorization: `Bearer ${lovableApiKey}`,
+      "Lovable-API-Key": lovableApiKey,
+      "X-Lovable-AIG-SDK": "vercel-ai-sdk",
     },
   });
 
