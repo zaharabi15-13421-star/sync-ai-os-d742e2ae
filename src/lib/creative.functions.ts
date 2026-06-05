@@ -408,7 +408,7 @@ export const enhancePrompt = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { text, action } = data;
 
-    const result = await generateText({
+    const result = await runTextGeneration({
       model: googleModel(),
       prompt: `${action} the following text:
 
@@ -427,8 +427,11 @@ Make it better while keeping the core meaning. ${
 Return ONLY the enhanced text - no explanation.`,
     });
 
+    if (result.error) return { enhancedText: null, error: result.error };
+
     return {
       enhancedText: result.text,
+      error: null,
     };
   });
 
@@ -445,7 +448,7 @@ export const critiqueContent = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { content, platform } = data;
 
-    const result = await generateObject({
+    const result = await runObjectGeneration<{ hookStrength: number; brandVoiceMatch: number; predictedCtr: number; benchmark: number; readabilityGrade: number; seoScore: number; optimizationTip: string }>({
       model: googleModel(),
       schema: z.object({
         hookStrength: z.number().min(1).max(10),
@@ -472,8 +475,11 @@ Provide one actionable optimization tip.
 Return ONLY valid JSON - no markdown, no explanation.`,
     });
 
+    if (result.error || !result.object) return { critique: null, error: result.error };
+
     return {
       critique: result.object,
+      error: null,
     };
   });
 
@@ -490,7 +496,7 @@ export const generateSeoKeywords = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { query, count } = data;
 
-    const result = await generateObject({
+    const result = await runObjectGeneration<{ keywords: Array<{ keyword: string; volume: number; competition: "Low" | "Medium" | "High" }> }>({
       model: googleModel(),
       schema: z.object({
         keywords: z.array(
@@ -511,8 +517,11 @@ For each keyword, provide:
 Return realistic SEO data for content optimization. Return ONLY valid JSON - no markdown.`,
     });
 
+    if (result.error || !result.object) return { keywords: [], error: result.error };
+
     return {
       keywords: result.object.keywords,
+      error: null,
     };
   });
 
