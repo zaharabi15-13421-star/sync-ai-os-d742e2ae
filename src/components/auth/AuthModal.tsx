@@ -159,29 +159,38 @@ interface AuthModalProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   initialTab?: AuthTab;
+  mode?: "signup" | "login";
 }
 
 const DASHBOARD_PATH = "/dashboard/intelligence";
 
-export function AuthModal({ open, onOpenChange, initialTab = "signup" }: AuthModalProps) {
-  const [screen, setScreen] = useState<AuthScreen>("entry");
-  const [tab, setTab] = useState<AuthTab>(initialTab);
+export function AuthModal({ open, onOpenChange, initialTab = "signup", mode }: AuthModalProps) {
+  const effectiveMode: "signup" | "login" = mode ?? initialTab;
+  const [screen, setScreen] = useState<AuthScreen>(effectiveMode === "login" ? "login" : "entry");
+  const [tab, setTab] = useState<AuthTab>(effectiveMode);
   const [registeredEmail, setRegisteredEmail] = useState("");
   const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
   const [resetEmail, setResetEmail] = useState("");
   const startTimeRef = useRef<number>(Date.now());
+  const navigate = useNavigate();
 
-  // Reset when opened
+  // Reset when opened + redirect if already signed in
   useEffect(() => {
-    if (open) {
-      setScreen("entry");
-      setTab(initialTab);
-      startTimeRef.current = Date.now();
-      logAuthEventFn({ data: { eventType: "modal_opened", metadata: { source: "direct" } } }).catch(() => {});
-    }
-  }, [open, initialTab]);
+    if (!open) return;
+    setScreen(effectiveMode === "login" ? "login" : "entry");
+    setTab(effectiveMode);
+    startTimeRef.current = Date.now();
+    logAuthEventFn({ data: { eventType: "modal_opened", metadata: { source: "direct" } } }).catch(() => {});
 
-  // Close handlers
+    void supabase.auth.getSession().then(({ data }) => {
+      const u = data.session?.user;
+      if (u?.email_confirmed_at) {
+        onOpenChange(false);
+        navigate({ to: DASHBOARD_PATH });
+      }
+    });
+  }, [open, effectiveMode, onOpenChange, navigate]);
+
   const close = useCallback(() => {
     logAuthEventFn({
       data: {
