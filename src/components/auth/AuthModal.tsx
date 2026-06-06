@@ -159,29 +159,38 @@ interface AuthModalProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   initialTab?: AuthTab;
+  mode?: "signup" | "login";
 }
 
 const DASHBOARD_PATH = "/dashboard/intelligence";
 
-export function AuthModal({ open, onOpenChange, initialTab = "signup" }: AuthModalProps) {
-  const [screen, setScreen] = useState<AuthScreen>("entry");
-  const [tab, setTab] = useState<AuthTab>(initialTab);
+export function AuthModal({ open, onOpenChange, initialTab = "signup", mode }: AuthModalProps) {
+  const effectiveMode: "signup" | "login" = mode ?? initialTab;
+  const [screen, setScreen] = useState<AuthScreen>(effectiveMode === "login" ? "login" : "entry");
+  const [tab, setTab] = useState<AuthTab>(effectiveMode);
   const [registeredEmail, setRegisteredEmail] = useState("");
   const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
   const [resetEmail, setResetEmail] = useState("");
   const startTimeRef = useRef<number>(Date.now());
+  const navigate = useNavigate();
 
-  // Reset when opened
+  // Reset when opened + redirect if already signed in
   useEffect(() => {
-    if (open) {
-      setScreen("entry");
-      setTab(initialTab);
-      startTimeRef.current = Date.now();
-      logAuthEventFn({ data: { eventType: "modal_opened", metadata: { source: "direct" } } }).catch(() => {});
-    }
-  }, [open, initialTab]);
+    if (!open) return;
+    setScreen(effectiveMode === "login" ? "login" : "entry");
+    setTab(effectiveMode);
+    startTimeRef.current = Date.now();
+    logAuthEventFn({ data: { eventType: "modal_opened", metadata: { source: "direct" } } }).catch(() => {});
 
-  // Close handlers
+    void supabase.auth.getSession().then(({ data }) => {
+      const u = data.session?.user;
+      if (u?.email_confirmed_at) {
+        onOpenChange(false);
+        navigate({ to: DASHBOARD_PATH });
+      }
+    });
+  }, [open, effectiveMode, onOpenChange, navigate]);
+
   const close = useCallback(() => {
     logAuthEventFn({
       data: {
@@ -242,13 +251,14 @@ export function AuthModal({ open, onOpenChange, initialTab = "signup" }: AuthMod
             <EntryScreen
               tab={tab}
               setTab={setTab}
+              hideTabs
               onEmail={() => setScreen(tab === "signup" ? "register" : "login")}
               onGoogleDone={() => onOpenChange(false)}
             />
           )}
           {screen === "register" && (
             <RegisterScreen
-              onBack={() => setScreen("entry")}
+              onBack={close}
               onDone={(email, userId) => {
                 setRegisteredEmail(email);
                 setRegisteredUserId(userId);
@@ -268,7 +278,7 @@ export function AuthModal({ open, onOpenChange, initialTab = "signup" }: AuthMod
           {screen === "success" && <SuccessScreen onClose={close} />}
           {screen === "login" && (
             <LoginScreen
-              onBack={() => setScreen("entry")}
+              onBack={close}
               onForgot={() => setScreen("forgot")}
               onSuccess={close}
               onGoogleDone={() => onOpenChange(false)}
@@ -299,8 +309,8 @@ export function AuthModal({ open, onOpenChange, initialTab = "signup" }: AuthMod
 // Screen 1: Entry
 // ============================================================
 function EntryScreen({
-  tab, setTab, onEmail, onGoogleDone,
-}: { tab: AuthTab; setTab: (t: AuthTab) => void; onEmail: () => void; onGoogleDone: () => void }) {
+  tab, setTab, onEmail, onGoogleDone, hideTabs,
+}: { tab: AuthTab; setTab: (t: AuthTab) => void; onEmail: () => void; onGoogleDone: () => void; hideTabs?: boolean }) {
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -339,29 +349,31 @@ function EntryScreen({
         </p>
       </header>
 
-      <div
-        className="flex p-[3px] mb-5"
-        style={{ background: "var(--auth-bg-base)", borderRadius: 10 }}
-        role="tablist"
-      >
-        {(["signup", "login"] as AuthTab[]).map((t) => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
-            className="flex-1 py-2 text-[14px] transition-colors"
-            style={{
-              background: tab === t ? "var(--auth-border)" : "transparent",
-              borderRadius: 8,
-              color: tab === t ? "var(--auth-text-primary)" : "var(--auth-text-muted)",
-              fontWeight: tab === t ? 500 : 400,
-            }}
-          >
-            {t === "signup" ? "Sign up" : "Log in"}
-          </button>
-        ))}
-      </div>
+      {!hideTabs && (
+        <div
+          className="flex p-[3px] mb-5"
+          style={{ background: "var(--auth-bg-base)", borderRadius: 10 }}
+          role="tablist"
+        >
+          {(["signup", "login"] as AuthTab[]).map((t) => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => setTab(t)}
+              className="flex-1 py-2 text-[14px] transition-colors"
+              style={{
+                background: tab === t ? "var(--auth-border)" : "transparent",
+                borderRadius: 8,
+                color: tab === t ? "var(--auth-text-primary)" : "var(--auth-text-muted)",
+                fontWeight: tab === t ? 500 : 400,
+              }}
+            >
+              {t === "signup" ? "Sign up" : "Log in"}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="space-y-3">
         <GoogleOAuthButton onClick={handleGoogle} loading={googleLoading} />
