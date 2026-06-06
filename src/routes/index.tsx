@@ -102,12 +102,25 @@ function NavButton({
   variant, onClick, children, ariaLabel,
 }: { variant: "ghost" | "purple"; onClick?: () => void; children: React.ReactNode; ariaLabel?: string }) {
   const [hover, setHover] = useState(false);
-  const base = variant === "ghost" ? ghostBtnStyle : purpleBtnStyle;
+  // Unified style for guest nav buttons: purple base, transparent on hover.
+  const base: React.CSSProperties = {
+    background: "#7C3AED",
+    color: "#fff",
+    border: "0.5px solid #7C3AED",
+    borderRadius: 8,
+    padding: "9px 20px",
+    fontSize: 14,
+    fontWeight: 500,
+    transition: "all 150ms ease",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+  };
   const hoverStyle: React.CSSProperties = hover
-    ? variant === "ghost"
-      ? { borderColor: "#7C3AED", color: "#A78BFA" }
-      : { filter: "brightness(1.1)" }
+    ? { background: "transparent", color: "#A78BFA", borderColor: "#7C3AED" }
     : {};
+  // Keep variant param for backwards compatibility; styles intentionally identical.
+  void variant;
   return (
     <button
       type="button"
