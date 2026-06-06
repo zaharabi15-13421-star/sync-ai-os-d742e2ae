@@ -599,21 +599,27 @@ function VerifyScreen({
       )}
 
       {/* 8. Resend button */}
-      <button
-        type="button"
-        onClick={resend}
-        disabled={seconds > 0 || resending}
-        className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-medium transition disabled:cursor-not-allowed"
-        style={{
-          background: "transparent",
-          border: "1px solid var(--auth-border)",
-          color: "var(--auth-text)",
-          opacity: seconds > 0 || resending ? 0.4 : 1,
-        }}
-      >
-        {resending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-        Resend verification email
-      </button>
+      {(() => {
+        const isDisabled = seconds > 0 || resending;
+        return (
+          <button
+            type="button"
+            onClick={resend}
+            disabled={isDisabled}
+            className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-medium transition"
+            style={{
+              background: isDisabled ? "transparent" : "rgba(124,58,237,0.12)",
+              border: `1px solid ${isDisabled ? "var(--auth-border)" : "rgba(124,58,237,0.55)"}`,
+              color: isDisabled ? "var(--auth-text)" : purple,
+              opacity: isDisabled ? 0.4 : 1,
+              cursor: isDisabled ? "not-allowed" : "pointer",
+            }}
+          >
+            {resending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Resend verification email
+          </button>
+        );
+      })()}
 
       {/* 9. Change email button */}
       <button
