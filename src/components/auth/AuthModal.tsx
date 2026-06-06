@@ -251,13 +251,14 @@ export function AuthModal({ open, onOpenChange, initialTab = "signup", mode }: A
             <EntryScreen
               tab={tab}
               setTab={setTab}
+              hideTabs
               onEmail={() => setScreen(tab === "signup" ? "register" : "login")}
               onGoogleDone={() => onOpenChange(false)}
             />
           )}
           {screen === "register" && (
             <RegisterScreen
-              onBack={() => setScreen("entry")}
+              onBack={close}
               onDone={(email, userId) => {
                 setRegisteredEmail(email);
                 setRegisteredUserId(userId);
@@ -277,7 +278,7 @@ export function AuthModal({ open, onOpenChange, initialTab = "signup", mode }: A
           {screen === "success" && <SuccessScreen onClose={close} />}
           {screen === "login" && (
             <LoginScreen
-              onBack={() => setScreen("entry")}
+              onBack={close}
               onForgot={() => setScreen("forgot")}
               onSuccess={close}
               onGoogleDone={() => onOpenChange(false)}
