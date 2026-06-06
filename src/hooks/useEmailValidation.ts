@@ -120,6 +120,56 @@ export function useEmailValidation(): UseEmailValidationResult {
     [applyFormat, duplicateExists],
   );
 
+  const runDeliverabilityCheck = useCallback(
+    async (value: string): Promise<boolean> => {
+      const lower = value.trim().toLowerCase();
+      const at = lower.lastIndexOf("@");
+      if (at < 0) return true;
+      const domain = lower.slice(at + 1);
+      const cached = deliverabilityCache.current.get(domain);
+      if (cached !== undefined) {
+        if (!cached) {
+          setEmailState("invalid");
+          setEmailError("This email domain doesn't exist or can't receive mail. Please check the spelling.");
+          setTypo(null);
+        }
+        return cached;
+      }
+      setEmailState("checking");
+      try {
+        const result = await Promise.race<
+          { deliverable: boolean; checked: boolean } | "timeout"
+        >([
+          verifyDeliverableFn({ data: { email: lower } }),
+          new Promise<"timeout">((r) => setTimeout(() => r("timeout"), 3500)),
+        ]);
+        if (result === "timeout") {
+          // Lenient: server will recheck on submit
+          setEmailState("valid");
+          setEmailError(null);
+          return true;
+        }
+        if (result.checked) {
+          deliverabilityCache.current.set(domain, result.deliverable);
+        }
+        if (!result.deliverable) {
+          setEmailState("invalid");
+          setEmailError("This email domain doesn't exist or can't receive mail. Please check the spelling.");
+          setTypo(null);
+          return false;
+        }
+        setEmailState("valid");
+        setEmailError(null);
+        return true;
+      } catch {
+        setEmailState("valid");
+        setEmailError(null);
+        return true;
+      }
+    },
+    [verifyDeliverableFn],
+  );
+
   const runDuplicateCheck = useCallback(
     async (value: string) => {
       const lower = value.trim().toLowerCase();
@@ -142,7 +192,6 @@ export function useEmailValidation(): UseEmailValidationResult {
           new Promise<"timeout">((r) => setTimeout(() => r("timeout"), DUP_TIMEOUT_MS)),
         ]);
         if (result === "timeout") {
-          // Be lenient — server will check on submit
           return;
         }
         dupCacheRef.current = { email: lower, exists: result.exists, timestamp: Date.now() };
@@ -159,6 +208,7 @@ export function useEmailValidation(): UseEmailValidationResult {
     },
     [checkEmailFn],
   );
+
 
   const handleEmailChange = useCallback(
     (value: string) => {
