@@ -54,6 +54,10 @@ export function useEmailValidation(): UseEmailValidationResult {
   const dupCacheRef = useRef<DupCache | null>(null);
   const dupCallCount = useRef(0);
   const checkEmailFn = useServerFn(checkEmailExists);
+  const verifyDeliverableFn = useServerFn(verifyEmailDeliverable);
+  const deliverabilityCache = useRef<Map<string, boolean>>(new Map());
+  const deliverabilityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   useEffect(() => {
     return () => {
