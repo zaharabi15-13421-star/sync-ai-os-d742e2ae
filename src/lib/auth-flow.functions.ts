@@ -7,6 +7,7 @@ import {
   resetReqSchema,
   otpSchema,
 } from "@/utils/validators";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 // ---------- shared helpers ---------- //
 async function logEvent(
