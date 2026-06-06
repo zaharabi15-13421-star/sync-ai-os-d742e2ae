@@ -16,7 +16,6 @@ const googleModel = () => lovableModel("google/gemini-2.5-pro");
  * Generate social media caption with emojis and hashtags
  */
 export const generateCaption = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => {
     return z.object({
       description: z.string().min(1, "Description is required"),
@@ -59,7 +58,6 @@ Return ONLY the caption text - no explanation, no JSON.`,
  * Generate hashtags segmented by category
  */
 export const generateHashtags = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => {
     return z.object({
       industry: z.string().min(1, "Industry is required"),
@@ -96,7 +94,6 @@ Return exactly ${count} total hashtags distributed across categories. Return ONL
  * Generate full blog post with markdown
  */
 export const generateBlog = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => {
     return z.object({
       topics: z.array(z.string()).min(1),
@@ -146,7 +143,6 @@ Return ONLY the blog post markdown - no explanation.`,
  * Generate product description
  */
 export const generateProductDescription = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => {
     return z.object({
       productName: z.string().min(1, "Product name is required"),
@@ -191,7 +187,6 @@ Return ONLY the description - no explanation.`,
  * Generate YouTube script with sections
  */
 export const generateScript = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => {
     return z.object({
       topic: z.string().min(1, "Topic is required"),
@@ -243,7 +238,6 @@ Return ONLY valid JSON - no markdown, no explanation.`,
  * Used by Image Lab, Poster, Try-On, Holography, Product Photography, Thumbnail.
  */
 export const generateImage = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => {
     return z.object({
       prompt: z.string().min(1, "Prompt is required"),
@@ -343,7 +337,6 @@ Make it visually striking, on-brand, and production-ready.`;
  * Enhance or rewrite text
  */
 export const enhancePrompt = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => {
     return z.object({
       text: z.string().min(1, "Text is required"),
@@ -381,7 +374,6 @@ Return ONLY the enhanced text - no explanation.`,
  * Critique content and provide feedback
  */
 export const critiqueContent = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => {
     return z.object({
       content: z.string().min(1, "Content is required"),
@@ -427,7 +419,6 @@ Return ONLY valid JSON - no markdown, no explanation.`,
  * Generate SEO keywords
  */
 export const generateSeoKeywords = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => {
     return z.object({
       query: z.string().min(1, "Query is required"),
@@ -465,7 +456,6 @@ Return realistic SEO data for content optimization. Return ONLY valid JSON - no 
 
 // Additional placeholder functions for poster and thumbnail
 export const generatePoster = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({
     title: z.string().min(1, "Title is required"),
     subtitle: z.string().default(""),
@@ -481,7 +471,6 @@ export const generatePoster = createServerFn({ method: "POST" })
   });
 
 export const generateThumbnail = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({
     headline: z.string().min(1, "Headline is required"),
     subheading: z.string().default(""),
