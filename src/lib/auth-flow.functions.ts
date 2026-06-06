@@ -335,38 +335,42 @@ export const clearLoginAttempts = createServerFn({ method: "POST" })
 
 // ---------- markEmailVerified ---------- //
 export const markEmailVerified = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ email: z.string().email() }).parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const email = data.email.toLowerCase();
+
+    // Only allow marking the authenticated caller's own email as verified.
+    const callerEmail = (context as any)?.claims?.email
+      ? String((context as any).claims.email).toLowerCase()
+      : null;
+    if (!callerEmail || callerEmail !== email) {
+      throw new Error("forbidden");
+    }
+
     await supabaseAdmin
       .from("user_profiles")
       .update({ email_verified: true })
-      .eq("email", email);
-    const { data: row } = await supabaseAdmin
-      .from("user_profiles")
-      .select("user_id")
-      .eq("email", email)
-      .maybeSingle();
-    if (row?.user_id) {
-      await logEvent(row.user_id, "email_verified", {}, getIp(), getUa());
-    }
+      .eq("user_id", (context as any).userId);
+    await logEvent((context as any).userId, "email_verified", {}, getIp(), getUa());
     return { ok: true };
   });
 
 // ---------- logAuthEventFn (client-callable) ---------- //
 export const logAuthEventFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z
       .object({
-        userId: z.string().uuid().nullable().optional(),
         eventType: z.string().min(1).max(80),
         metadata: z.record(z.string(), z.unknown()).optional(),
       })
       .parse(input),
   )
-  .handler(async ({ data }) => {
-    await logEvent(data.userId ?? null, data.eventType, data.metadata ?? {}, getIp(), getUa());
+  .handler(async ({ data, context }) => {
+    // Always use the authenticated userId — never trust client-supplied IDs.
+    await logEvent((context as any).userId ?? null, data.eventType, data.metadata ?? {}, getIp(), getUa());
     return { ok: true };
   });
 
