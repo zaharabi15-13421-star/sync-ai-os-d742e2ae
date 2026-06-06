@@ -469,7 +469,10 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
       });
       const { error: otpErr } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,
-        options: { shouldCreateUser: false },
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
       if (otpErr) console.warn("OTP send error", otpErr);
       logAuthEventFn({
