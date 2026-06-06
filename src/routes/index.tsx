@@ -1,13 +1,18 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Brain, Megaphone, Users, Contact, Star, Shield, BarChart3,
-  Layers, Atom, ArrowRight, Check, Zap, TrendingDown, X
+  Layers, Atom, ArrowRight, Check, Zap, TrendingDown, X, LayoutDashboard, Lock, LogOut,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/app/ThemeToggle";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -49,24 +54,73 @@ const TIERS = [
   { name: "Enterprise", price: 4900, blurb: "For agencies & global brands", features: ["Unlimited everything", "White-label dashboard", "Multi-brand management", "API access + SSO", "Dedicated CSM", "SLA & DPA"], accent: "from-purple-600 to-fuchsia-600" },
 ];
 
+type AuthState = { open: boolean; mode: "signup" | "login" };
+
 function Landing() {
-  const [demoOpen, setDemoOpen] = useState(false);
+  const [auth, setAuth] = useState<AuthState>({ open: false, mode: "signup" });
+  const [session, setSession] = useState<Session | null>(null);
+  const [showAccountPopup, setShowAccountPopup] = useState(false);
+
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const openSignup = () => setAuth({ open: true, mode: "signup" });
+  const openLogin = () => setAuth({ open: true, mode: "login" });
+
   return (
     <div className="min-h-screen text-foreground overflow-x-hidden">
-      <Nav onOpenDemo={() => setDemoOpen(true)} />
-      <Hero onOpenDemo={() => setDemoOpen(true)} />
+      <Nav
+        session={session}
+        onLogin={openLogin}
+        onSignup={openSignup}
+        onDashboardGuest={() => setShowAccountPopup(true)}
+      />
+      <AccountRequiredPopup
+        open={showAccountPopup}
+        onClose={() => setShowAccountPopup(false)}
+        onSignup={() => { setShowAccountPopup(false); openSignup(); }}
+        onLogin={() => { setShowAccountPopup(false); openLogin(); }}
+      />
+      <Hero onOpenDemo={openSignup} />
       <Marquee />
       <Bento />
       <ReplacementCalculator />
       <Pricing />
       <CTA />
       <Footer />
-      <AuthModal open={demoOpen} onOpenChange={setDemoOpen} />
+      <AuthModal
+        open={auth.open}
+        onOpenChange={(v) => setAuth((s) => ({ ...s, open: v }))}
+        mode={auth.mode}
+        initialTab={auth.mode}
+      />
     </div>
   );
 }
 
-function Nav({ onOpenDemo }: { onOpenDemo: () => void }) {
+function Nav({
+  session, onLogin, onSignup, onDashboardGuest,
+}: {
+  session: Session | null;
+  onLogin: () => void;
+  onSignup: () => void;
+  onDashboardGuest: () => void;
+}) {
+  const navigate = useNavigate();
+  const user = session?.user;
+  const isAuthed = !!user?.email_confirmed_at || !!user?.confirmed_at;
+
+  const initials = (() => {
+    if (!user) return "";
+    const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+    const name = (meta.full_name as string) || (meta.brand_name as string) || user.email || "";
+    return name.slice(0, 2).toUpperCase();
+  })();
+  const avatarUrl = (user?.user_metadata as Record<string, unknown> | undefined)?.avatar_url as string | undefined;
+
   return (
     <nav className="sticky top-0 z-50 border-b border-white/5 bg-[color:var(--app-bg)]/70 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
@@ -83,20 +137,188 @@ function Nav({ onOpenDemo }: { onOpenDemo: () => void }) {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <button
-            onClick={onOpenDemo}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 px-3.5 h-9 text-sm font-medium glow-primary hover:scale-[1.02] transition"
-          >
-            <Sparkles className="h-3.5 w-3.5" /> Register
-          </button>
-          <Link to="/dashboard/intelligence" className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 h-9 text-sm hover:bg-white/10">
-            Dashboard <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+          {!isAuthed ? (
+            <>
+              <button
+                onClick={onLogin}
+                className="inline-flex items-center justify-center text-[14px] font-medium transition-colors duration-150"
+                style={{
+                  background: "transparent",
+                  border: "0.5px solid #2D2D4E",
+                  color: "#E2E8F0",
+                  borderRadius: 8,
+                  padding: "9px 20px",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#7C3AED"; e.currentTarget.style.color = "#A78BFA"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#2D2D4E"; e.currentTarget.style.color = "#E2E8F0"; }}
+              >
+                Login
+              </button>
+              <button
+                onClick={onSignup}
+                className="inline-flex items-center justify-center text-[14px] font-medium text-white transition-[filter] duration-150 hover:brightness-110"
+                style={{ background: "#7C3AED", borderRadius: 8, padding: "9px 20px" }}
+              >
+                Sign Up
+              </button>
+              <button
+                onClick={onDashboardGuest}
+                className="inline-flex items-center justify-center gap-1.5 text-[14px] font-medium transition-colors duration-150"
+                style={{
+                  background: "transparent",
+                  border: "0.5px solid #2D2D4E",
+                  color: "#E2E8F0",
+                  borderRadius: 8,
+                  padding: "9px 20px",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#7C3AED"; e.currentTarget.style.color = "#A78BFA"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#2D2D4E"; e.currentTarget.style.color = "#E2E8F0"; }}
+              >
+                Dashboard <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => navigate({ to: "/dashboard/intelligence" })}
+                className="inline-flex items-center justify-center gap-1.5 text-[14px] font-medium text-white transition-[filter] duration-150 hover:brightness-110"
+                style={{ background: "#7C3AED", borderRadius: 8, padding: "9px 20px" }}
+              >
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                Go to Dashboard
+              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    aria-label="Account menu"
+                    className="grid place-items-center overflow-hidden"
+                    style={{
+                      width: 32, height: 32, borderRadius: "50%",
+                      background: "#2D2D4E", color: "#A78BFA",
+                      fontSize: 12, fontWeight: 600,
+                    }}
+                  >
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <span>{initials}</span>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => navigate({ to: "/dashboard/intelligence" })}>
+                    <LayoutDashboard className="h-3.5 w-3.5 mr-2" /> Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      window.location.reload();
+                    }}
+                  >
+                    <LogOut className="h-3.5 w-3.5 mr-2" /> Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          )}
         </div>
       </div>
     </nav>
   );
 }
+
+function AccountRequiredPopup({
+  open, onClose, onSignup, onLogin,
+}: { open: boolean; onClose: () => void; onSignup: () => void; onLogin: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const timer = setTimeout(onClose, 8000);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    // Defer to avoid catching the originating click that opened the popup
+    const t2 = setTimeout(() => document.addEventListener("mousedown", onClick), 0);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(t2);
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onClick);
+    };
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          ref={ref}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="fixed left-1/2 -translate-x-1/2"
+          style={{
+            top: 80,
+            zIndex: 1001,
+            background: "#1A1A2E",
+            border: "0.5px solid #7C3AED",
+            borderRadius: 12,
+            padding: "20px 24px",
+            maxWidth: 360,
+            width: "calc(100% - 32px)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute"
+            style={{ top: 12, right: 12, color: "#64748B", cursor: "pointer" }}
+          >
+            <X size={16} />
+          </button>
+          <div className="flex justify-center">
+            <Lock size={20} style={{ color: "#A78BFA" }} />
+          </div>
+          <h3 className="text-center" style={{ fontSize: 16, fontWeight: 500, color: "#E2E8F0", marginTop: 8 }}>
+            Account required
+          </h3>
+          <p className="text-center" style={{ fontSize: 13, color: "#94A3B8", lineHeight: 1.6, marginTop: 6 }}>
+            You need an account to access the BrandSync AI dashboard. Sign up free or log in to continue.
+          </p>
+          <div className="flex" style={{ gap: 10, marginTop: 16 }}>
+            <button
+              onClick={onSignup}
+              className="text-white hover:brightness-110 transition-[filter]"
+              style={{
+                background: "#7C3AED", borderRadius: 8, padding: "9px 0",
+                flex: 1, fontSize: 13, fontWeight: 500,
+              }}
+            >
+              Sign Up Free
+            </button>
+            <button
+              onClick={onLogin}
+              style={{
+                background: "transparent", border: "0.5px solid #2D2D4E",
+                color: "#E2E8F0", borderRadius: 8, padding: "9px 0",
+                flex: 1, fontSize: 13,
+              }}
+            >
+              Log In
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 
 function Hero({ onOpenDemo }: { onOpenDemo: () => void }) {
   return (
