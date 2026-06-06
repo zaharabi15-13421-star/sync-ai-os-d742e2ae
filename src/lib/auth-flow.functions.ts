@@ -67,7 +67,17 @@ export const registerUser = createServerFn({ method: "POST" })
       throw new Error("Too many registration attempts. Please try again later.");
     }
 
+    // STEP 0 — server-side email validation (format, length, disposable)
+    const { validateEmailFormat, isDisposableEmail } = await import("@/utils/emailValidator");
+    const normalizedEmail = data.email.trim().toLowerCase();
+    if (normalizedEmail.length > 254) throw new Error("email_too_long");
+    const fmt = validateEmailFormat(normalizedEmail);
+    if (!fmt.valid) throw new Error("invalid_email_format");
+    if (isDisposableEmail(normalizedEmail)) throw new Error("disposable_email");
+    data.email = normalizedEmail;
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
 
     // Duplicate check (against user_profiles.email — populated on signup)
     const { data: existing } = await supabaseAdmin

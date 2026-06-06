@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, Mail, CheckCircle2, KeyRound, LockOpen, AlertCircle, Loader2, ShieldCheck, RefreshCw, Pencil, HelpCircle } from "lucide-react";
+import { X, Sparkles, Mail, CheckCircle2, KeyRound, LockOpen, AlertCircle, AlertTriangle, Loader2, Check, ShieldCheck, RefreshCw, Pencil, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import {
@@ -14,10 +14,138 @@ import {
 import { scorePassword } from "@/utils/passwordScorer";
 import { EMAIL_REGEX, normalizeUrl, sanitizeText } from "@/utils/validators";
 import {
-  registerUser, checkEmailExists, recordLoginFailure, clearLoginAttempts,
+  registerUser, recordLoginFailure, clearLoginAttempts,
   checkLoginLockout, markEmailVerified, requestPasswordReset, logAuthEventFn,
 } from "@/lib/auth-flow.functions";
+import { useEmailValidation, type EmailState } from "@/hooks/useEmailValidation";
 import { INDUSTRIES, TEAM_SIZES, type AuthScreen, type AuthTab, type RegistrationErrors, type RegistrationFormValues } from "@/types/auth";
+
+// ============================================================
+// EmailField — strict validation + typo detection
+// ============================================================
+interface EmailFieldProps {
+  value: string;
+  state: EmailState;
+  error: string | null;
+  typoSuggestion: { suggested: string; domain: string } | null;
+  isCheckingDuplicate: boolean;
+  duplicateExists: boolean;
+  onChange: (v: string) => void;
+  onBlur: () => void;
+  onPaste: (e: React.ClipboardEvent<HTMLInputElement>) => void;
+  onAcceptTypo: () => void;
+  onDismissTypo: () => void;
+  onLoginWithEmail?: () => void;
+}
+
+function EmailField(props: EmailFieldProps) {
+  const { value, state, error, typoSuggestion, isCheckingDuplicate, onChange, onBlur, onPaste, onAcceptTypo, onDismissTypo, onLoginWithEmail } = props;
+  let borderColor = "var(--auth-border)";
+  let boxShadow: string | undefined;
+  if (state === "invalid") borderColor = "#EF4444";
+  else if (state === "typo_warning") { borderColor = "#F59E0B"; boxShadow = "0 0 0 2px rgba(245,158,11,0.15)"; }
+  else if (state === "valid") borderColor = "#22C55E";
+  else if (state === "typing") { borderColor = "#7C3AED"; boxShadow = "0 0 0 2px rgba(124,58,237,0.2)"; }
+
+  const showLoginLink = state === "invalid" && /already exists/i.test(error ?? "");
+
+  return (
+    <div>
+      <Label required>Email</Label>
+      <div className="relative">
+        <input
+          type="email"
+          id="email"
+          name="email"
+          autoComplete="email"
+          placeholder="you@brand.com"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+          onPaste={onPaste}
+          aria-required="true"
+          aria-invalid={state === "invalid" || state === "typo_warning"}
+          aria-describedby={error || typoSuggestion ? "email-error" : undefined}
+          style={{
+            background: "var(--auth-bg-input)",
+            border: `0.5px solid ${borderColor}`,
+            borderRadius: 8,
+            padding: "11px 40px 11px 14px",
+            color: "var(--auth-text-primary)",
+            fontSize: 14,
+            width: "100%",
+            outline: "none",
+            boxShadow,
+            transition: "border-color 150ms ease, box-shadow 150ms ease",
+          }}
+        />
+        <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+          {isCheckingDuplicate && <Loader2 className="h-4 w-4 animate-spin" style={{ color: "#94A3B8" }} />}
+          {!isCheckingDuplicate && state === "valid" && <Check className="h-4 w-4" style={{ color: "#22C55E" }} />}
+          {!isCheckingDuplicate && state === "invalid" && <AlertCircle className="h-4 w-4" style={{ color: "#EF4444" }} />}
+          {!isCheckingDuplicate && state === "typo_warning" && <AlertTriangle className="h-4 w-4" style={{ color: "#F59E0B" }} />}
+        </div>
+      </div>
+
+      {isCheckingDuplicate && (
+        <p className="mt-1 text-[11px]" style={{ color: "#64748B" }}>Checking availability…</p>
+      )}
+
+      {error && !typoSuggestion && (
+        <div id="email-error" role="alert" aria-live="polite" aria-atomic="true" className="mt-1 text-[12px]" style={{ color: "#EF4444" }}>
+          {error}
+          {showLoginLink && onLoginWithEmail && (
+            <>
+              {" "}
+              <button type="button" onClick={onLoginWithEmail} className="underline" style={{ color: "#A78BFA" }}>
+                Log in instead?
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {typoSuggestion && (
+        <div
+          id="email-error"
+          role="status"
+          aria-live="polite"
+          className="mt-1"
+          style={{
+            background: "rgba(245,158,11,0.08)",
+            border: "0.5px solid rgba(245,158,11,0.25)",
+            borderRadius: 6,
+            padding: "8px 12px",
+          }}
+        >
+          <div className="text-[12px] font-medium" style={{ color: "#F59E0B" }}>
+            Did you mean {typoSuggestion.suggested}?
+          </div>
+          <button
+            type="button"
+            onClick={onAcceptTypo}
+            aria-label={`Use suggested email ${typoSuggestion.suggested}`}
+            className="text-[12px] underline mt-0.5"
+            style={{ color: "#A78BFA", cursor: "pointer" }}
+          >
+            Use {typoSuggestion.suggested}
+          </button>
+          <div>
+            <button
+              type="button"
+              onClick={onDismissTypo}
+              aria-label="Keep my email address as entered"
+              className="text-[11px] mt-1"
+              style={{ color: "#64748B", cursor: "pointer" }}
+            >
+              No, my email is correct →
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface AuthModalProps {
   open: boolean;
@@ -262,32 +390,27 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
     websiteUrl: "", password: "", confirmPassword: "", acceptTerms: false,
   });
   const [errors, setErrors] = useState<RegistrationErrors>({});
-  const [emailChecking, setEmailChecking] = useState(false);
-  const [emailExists, setEmailExists] = useState(false);
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const emailRef = useRef<HTMLDivElement>(null);
   const register = useServerFn(registerUser);
-  const checkEmail = useServerFn(checkEmailExists);
+
+  const email = useEmailValidation();
 
   useEffect(() => { logAuthEventFn({ data: { eventType: "registration_form_started" } }).catch(() => {}); }, []);
 
   const setField = <K extends keyof RegistrationFormValues>(k: K, val: RegistrationFormValues[K]) => {
     setV((s) => ({ ...s, [k]: val }));
     setErrors((e) => ({ ...e, [k]: undefined }));
-    if (k === "email") setEmailExists(false);
   };
 
-  const validate = useCallback((): RegistrationErrors => {
+  const validateOther = useCallback((): RegistrationErrors => {
     const e: RegistrationErrors = {};
     const name = sanitizeText(v.companyName);
     if (!name) e.companyName = "Please enter your company or brand name";
     else if (name.length < 2) e.companyName = "Must be at least 2 characters";
     else if (name.length > 100) e.companyName = "Must be 100 characters or fewer";
-
-    if (!v.email.trim()) e.email = "Please enter your email address";
-    else if (!EMAIL_REGEX.test(v.email)) e.email = "Please enter a valid email address";
-    else if (emailExists) e.email = "An account with this email already exists";
 
     if (!v.industry) e.industry = "Please select your industry";
     if (!v.teamSize) e.teamSize = "Please select your team size";
@@ -306,36 +429,32 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
     if (!v.acceptTerms) e.acceptTerms = "Please agree to the Terms of Service and Privacy Policy";
 
     return e;
-  }, [v, emailExists]);
-
-  const handleEmailBlur = async () => {
-    if (!EMAIL_REGEX.test(v.email)) return;
-    setEmailChecking(true);
-    try {
-      const res = await checkEmail({ data: { email: v.email } });
-      setEmailExists(res.exists);
-      if (res.exists) setErrors((e) => ({ ...e, email: "An account with this email already exists" }));
-    } catch { /* ignore */ }
-    setEmailChecking(false);
-  };
+  }, [v]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const eobj = validate();
-    if (Object.keys(eobj).length > 0) {
+    const eobj = validateOther();
+    const emailOk = email.forceValidate();
+    if (!emailOk || Object.keys(eobj).length > 0) {
       setErrors(eobj);
       setShake(true);
       setTimeout(() => setShake(false), 350);
-      logAuthEventFn({ data: { eventType: "registration_form_error", metadata: { fields: Object.keys(eobj) } } }).catch(() => {});
-      const firstErr = formRef.current?.querySelector<HTMLElement>("[aria-invalid='true']");
-      firstErr?.focus();
+      logAuthEventFn({ data: { eventType: "registration_form_error", metadata: { fields: [...Object.keys(eobj), ...(emailOk ? [] : ["email"])] } } }).catch(() => {});
+      if (!emailOk) {
+        emailRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        emailRef.current?.querySelector<HTMLInputElement>("input#email")?.focus();
+      } else {
+        const firstErr = formRef.current?.querySelector<HTMLElement>("[aria-invalid='true']");
+        firstErr?.focus();
+      }
       return;
     }
     setLoading(true);
+    const normalizedEmail = email.emailValue.trim().toLowerCase();
     try {
       const res = await register({
         data: {
-          email: v.email.trim().toLowerCase(),
+          email: normalizedEmail,
           password: v.password,
           company_name: sanitizeText(v.companyName),
           industry: v.industry,
@@ -343,15 +462,11 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
           website_url: v.websiteUrl.trim() ? normalizeUrl(v.websiteUrl) : "",
         },
       });
-      // Dispatch OTP via signInWithOtp (Magic Link template — must use {{ .Token }})
       const { error: otpErr } = await supabase.auth.signInWithOtp({
-        email: v.email.trim().toLowerCase(),
+        email: normalizedEmail,
         options: { shouldCreateUser: false },
       });
-      if (otpErr) {
-        // Not fatal — registration succeeded; user can use Resend
-        console.warn("OTP send error", otpErr);
-      }
+      if (otpErr) console.warn("OTP send error", otpErr);
       logAuthEventFn({
         data: {
           eventType: "registration_form_submitted",
@@ -360,12 +475,15 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
         },
       }).catch(() => {});
       toast.success("Account created", { description: "Check your inbox for the verification code." });
-      onDone(v.email.trim().toLowerCase(), res.user_id);
+      onDone(normalizedEmail, res.user_id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong on our end. Please try again.";
-      if (msg === "EMAIL_EXISTS") {
-        setEmailExists(true);
-        setErrors((e) => ({ ...e, email: "An account with this email already exists" }));
+      if (msg === "EMAIL_EXISTS" || msg === "email_exists") {
+        setErrors((er) => ({ ...er, email: "An account with this email already exists" }));
+      } else if (msg === "disposable_email") {
+        setErrors((er) => ({ ...er, email: "Please use a permanent email address to create your account" }));
+      } else if (msg === "invalid_email_format" || msg === "email_too_long") {
+        setErrors((er) => ({ ...er, email: "Please enter a valid email address" }));
       } else {
         toast.error("Couldn't create your account", { description: msg });
       }
@@ -378,6 +496,15 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
 
   const strength = scorePassword(v.password);
   const passwordsMatch = v.confirmPassword.length > 0 && v.confirmPassword === v.password;
+  const otherFieldsValid =
+    sanitizeText(v.companyName).length >= 2 &&
+    Boolean(v.industry) &&
+    Boolean(v.teamSize) &&
+    v.password.length >= 8 &&
+    passwordsMatch &&
+    v.acceptTerms;
+  const canSubmit = email.isEmailValid && otherFieldsValid && !loading;
+
 
   return (
     <form ref={formRef} onSubmit={submit} noValidate className={shake ? "auth-shake" : ""}>
@@ -399,17 +526,24 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
           error={errors.companyName}
           valid={!errors.companyName && sanitizeText(v.companyName).length >= 2}
         />
-        <TextField
-          label="Email"
-          required
-          type="email"
-          placeholder="you@brand.com"
-          value={v.email}
-          onChange={(e) => setField("email", e.target.value)}
-          onBlur={handleEmailBlur}
-          error={errors.email}
-          valid={!errors.email && EMAIL_REGEX.test(v.email) && !emailExists && !emailChecking}
-        />
+        <div ref={emailRef}>
+          <EmailField
+            value={email.emailValue}
+            state={email.emailState}
+            error={email.emailError}
+            typoSuggestion={email.emailTypoSuggestion}
+            isCheckingDuplicate={email.isCheckingDuplicate}
+            duplicateExists={email.duplicateExists}
+            onChange={email.handleEmailChange}
+            onBlur={email.handleEmailBlur}
+            onPaste={email.handleEmailPaste}
+            onAcceptTypo={email.acceptTypoSuggestion}
+            onDismissTypo={email.dismissTypoWarning}
+          />
+          {errors.email && !email.emailError && (
+            <p role="alert" className="mt-1 text-[12px]" style={{ color: "#EF4444" }}>{errors.email}</p>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <SelectField
             label="Industry"
@@ -473,7 +607,7 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
         </div>
         <FieldError msg={errors.acceptTerms} />
 
-        <PrimaryButton type="submit" loading={loading} disabled={loading} className="mt-2">
+        <PrimaryButton type="submit" loading={loading} disabled={!canSubmit} className="mt-2">
           {loading ? (
             <span className="inline-flex items-center gap-2 justify-center">
               <Loader2 className="h-4 w-4 animate-spin" /> Creating your account…
