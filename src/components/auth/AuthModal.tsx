@@ -469,7 +469,10 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
       });
       const { error: otpErr } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,
-        options: { shouldCreateUser: false },
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
       if (otpErr) console.warn("OTP send error", otpErr);
       logAuthEventFn({
@@ -652,7 +655,11 @@ function VerifyScreen({
     if (seconds > 0 || resending) return;
     setResending(true);
     try {
-      const { error: e } = await supabase.auth.resend({ type: "signup", email });
+      const { error: e } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      });
       if (e) throw e;
       toast.success(`Verification email resent to ${email}`);
       setSeconds(45);
