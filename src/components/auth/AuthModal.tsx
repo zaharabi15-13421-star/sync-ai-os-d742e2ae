@@ -636,6 +636,11 @@ function VerifyScreen({
 }: { email: string; userId: string | null; onSuccess: () => void; onChangeEmail: () => void; startedAt: number }) {
   const [seconds, setSeconds] = useState(45);
   const [resending, setResending] = useState(false);
+  const { pollingTimedOut } = useEmailVerificationDetection({
+    userId,
+    email,
+    enabled: true,
+  });
 
   useEffect(() => {
     if (seconds <= 0) return;
