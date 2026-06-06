@@ -296,7 +296,7 @@ function BrandDnaSetupPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" onClick={() => setStep(1)}>Back</Button>
+                <Button variant="ghost" asChild><Link to="/dashboard">Back</Link></Button>
                 <Button
                   onClick={() => navigate({ to: "/dashboard/intelligence" })}
                   disabled={!canEnterDashboard}
