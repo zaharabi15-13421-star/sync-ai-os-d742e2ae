@@ -84,16 +84,19 @@ function EmailField(props: EmailFieldProps) {
           }}
         />
         <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-          {isCheckingDuplicate && <Loader2 className="h-4 w-4 animate-spin" style={{ color: "#94A3B8" }} />}
-          {!isCheckingDuplicate && state === "valid" && <Check className="h-4 w-4" style={{ color: "#22C55E" }} />}
-          {!isCheckingDuplicate && state === "invalid" && <AlertCircle className="h-4 w-4" style={{ color: "#EF4444" }} />}
-          {!isCheckingDuplicate && state === "typo_warning" && <AlertTriangle className="h-4 w-4" style={{ color: "#F59E0B" }} />}
+          {isChecking && <Loader2 className="h-4 w-4 animate-spin" style={{ color: "#94A3B8" }} />}
+          {!isChecking && state === "valid" && <Check className="h-4 w-4" style={{ color: "#22C55E" }} />}
+          {!isChecking && state === "invalid" && <AlertCircle className="h-4 w-4" style={{ color: "#EF4444" }} />}
+          {!isChecking && state === "typo_warning" && <AlertTriangle className="h-4 w-4" style={{ color: "#F59E0B" }} />}
         </div>
       </div>
 
-      {isCheckingDuplicate && (
-        <p className="mt-1 text-[11px]" style={{ color: "#64748B" }}>Checking availability…</p>
+      {isChecking && (
+        <p className="mt-1 text-[11px]" style={{ color: "#64748B" }}>
+          {state === "checking" ? "Verifying email address…" : "Checking availability…"}
+        </p>
       )}
+
 
       {error && !typoSuggestion && (
         <div id="email-error" role="alert" aria-live="polite" aria-atomic="true" className="mt-1 text-[12px]" style={{ color: "#EF4444" }}>
