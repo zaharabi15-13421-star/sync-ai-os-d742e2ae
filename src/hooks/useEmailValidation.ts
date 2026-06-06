@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { checkEmailExists } from "@/lib/auth-flow.functions";
+import { checkEmailExists, verifyEmailDeliverable } from "@/lib/auth-flow.functions";
 import {
   validateEmailFormat,
   detectEmailTypo,
   type EmailFormatResult,
 } from "@/utils/emailValidator";
 
-export type EmailState = "empty" | "typing" | "invalid" | "typo_warning" | "valid";
+export type EmailState = "empty" | "typing" | "invalid" | "typo_warning" | "checking" | "valid";
+
 
 export interface UseEmailValidationResult {
   emailValue: string;
