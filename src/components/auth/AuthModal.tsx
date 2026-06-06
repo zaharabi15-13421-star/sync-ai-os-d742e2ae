@@ -309,8 +309,8 @@ export function AuthModal({ open, onOpenChange, initialTab = "signup", mode }: A
 // Screen 1: Entry
 // ============================================================
 function EntryScreen({
-  tab, setTab, onEmail, onGoogleDone,
-}: { tab: AuthTab; setTab: (t: AuthTab) => void; onEmail: () => void; onGoogleDone: () => void }) {
+  tab, setTab, onEmail, onGoogleDone, hideTabs,
+}: { tab: AuthTab; setTab: (t: AuthTab) => void; onEmail: () => void; onGoogleDone: () => void; hideTabs?: boolean }) {
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
 
