@@ -14,7 +14,7 @@ import {
 import { scorePassword } from "@/utils/passwordScorer";
 import { EMAIL_REGEX, normalizeUrl, sanitizeText } from "@/utils/validators";
 import {
-  registerUser, checkEmailExists, recordLoginFailure, clearLoginAttempts,
+  registerUser, recordLoginFailure, clearLoginAttempts,
   checkLoginLockout, markEmailVerified, requestPasswordReset, logAuthEventFn,
 } from "@/lib/auth-flow.functions";
 import { useEmailValidation, type EmailState } from "@/hooks/useEmailValidation";
