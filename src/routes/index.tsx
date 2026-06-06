@@ -1,13 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Brain, Megaphone, Users, Contact, Star, Shield, BarChart3,
-  Layers, Atom, ArrowRight, Check, Zap, TrendingDown, X
+  Layers, Atom, ArrowRight, Check, Zap, TrendingDown, X, Lock, LayoutDashboard, LogOut
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/app/ThemeToggle";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import type { AuthTab } from "@/types/auth";
 
 export const Route = createFileRoute("/")({
   component: Landing,
