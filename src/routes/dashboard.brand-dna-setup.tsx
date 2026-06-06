@@ -181,94 +181,19 @@ function BrandDnaSetupPage() {
             <Sparkles className="h-3 w-3" /> Onboarding
           </div>
           <h1 className="mt-3 text-3xl md:text-4xl font-semibold tracking-tight bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent">
-            Cultivate Your Brand DNA
+            Connect Your Platforms
           </h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-            Tell us who you are, then connect your real digital platforms so BrandSync AI can analyze your live brand ecosystem and generate real-time intelligence.
+            Connect your real digital platforms so BrandSync AI can analyze your live brand ecosystem and generate real-time intelligence.
           </p>
 
-          {/* Stepper */}
-          <div className="mt-8 flex items-center gap-3">
-            {[1, 2].map((n) => (
-              <button
-                key={n}
-                onClick={() => setStep(n as 1 | 2)}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl border px-4 py-2.5 text-sm transition",
-                  step === n
-                    ? "border-indigo-400/40 bg-indigo-500/10 text-white"
-                    : "border-white/10 bg-white/5 text-muted-foreground hover:text-white",
-                )}
-              >
-                <span className={cn(
-                  "h-6 w-6 rounded-full grid place-items-center text-xs font-semibold",
-                  step === n ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white" : "bg-white/10 text-muted-foreground",
-                )}>{n}</span>
-                <span>{n === 1 ? "Brand Identity" : "Connect Platforms"}</span>
-              </button>
-            ))}
-            <div className="ml-auto text-xs text-muted-foreground">
-              {connectedCount}/10 connected · Website {hasWebsite ? "✓" : "—"}
-            </div>
+          <div className="mt-6 text-xs text-muted-foreground">
+            {connectedCount}/10 connected · Website {hasWebsite ? "✓" : "—"}
           </div>
         </header>
 
-        {step === 1 && (
-          <motion.section
-            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-8"
-          >
-            <div className="grid md:grid-cols-2 gap-x-6 gap-y-5">
-              <div>
-                <Label>Brand Name *</Label>
-                <Input value={form.brandName} onChange={(e) => setForm({ ...form, brandName: e.target.value })} placeholder="Acme Corporation" />
-              </div>
-              <div>
-                <Label>Industry *</Label>
-                <Select value={form.industry} onValueChange={(v) => setForm({ ...form, industry: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>{INDUSTRIES.map((i) => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Employee Size *</Label>
-                <Select value={form.employeeSize} onValueChange={(v) => setForm({ ...form, employeeSize: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>{EMPLOYEE_SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Business Location</Label>
-                <Input value={form.businessLocation} onChange={(e) => setForm({ ...form, businessLocation: e.target.value })} placeholder="e.g. Dubai, UAE" />
-              </div>
-              <div className="md:col-span-2">
-                <Label>Website URL</Label>
-                <Input value={form.websiteUrl} onChange={(e) => setForm({ ...form, websiteUrl: e.target.value })} placeholder="https://www.acmecorp.com" />
-              </div>
-              <div className="md:col-span-2">
-                <Label className="flex items-center gap-2"><Target className="h-3.5 w-3.5 text-indigo-300" /> Brand Goal</Label>
-                <Textarea value={form.brandGoal} onChange={(e) => setForm({ ...form, brandGoal: e.target.value })} placeholder="What does your brand want to achieve in the next 12 months?" rows={3} />
-              </div>
-              <div className="md:col-span-2">
-                <Label className="flex items-center gap-2"><UsersIcon className="h-3.5 w-3.5 text-indigo-300" /> Target Audience</Label>
-                <Textarea value={form.targetAudience} onChange={(e) => setForm({ ...form, targetAudience: e.target.value })} placeholder="Who are you trying to reach? Demographics, behaviours, jobs to be done." rows={3} />
-              </div>
-            </div>
-
-            <div className="mt-7 flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">All fields are stored securely in your private workspace.</p>
-              <Button
-                onClick={() => saveMutation.mutate(form)}
-                disabled={saveMutation.isPending || !form.brandName || !form.industry || !form.employeeSize}
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 h-11 px-6"
-              >
-                {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Save & continue <ArrowRight className="ml-2 h-4 w-4" /></>}
-              </Button>
-            </div>
-          </motion.section>
-        )}
-
         {step === 2 && (
+
           <motion.section
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
             className="space-y-5"
