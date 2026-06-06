@@ -118,7 +118,7 @@ function BrandDnaSetupPage() {
     onSuccess: () => {
       toast.success("Brand identity saved");
       qc.invalidateQueries({ queryKey: ["brand-dna"] });
-      setStep(2);
+      _setStep(2);
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not save"),
   });
