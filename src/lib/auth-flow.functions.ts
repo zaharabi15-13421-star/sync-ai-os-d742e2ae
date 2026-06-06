@@ -227,10 +227,8 @@ export const verifyEmailDeliverable = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const ip = getIp();
     if (!rateLimit(`mx:${ip ?? "unknown"}`, 30, 60 * 1000)) {
-      // Be lenient on rate limit — server will recheck on submit
       return { deliverable: true, checked: false };
     }
-
     const email = data.email.trim().toLowerCase();
     const at = email.lastIndexOf("@");
     if (at < 0) return { deliverable: false, checked: true, reason: "format" as const };
@@ -238,44 +236,10 @@ export const verifyEmailDeliverable = createServerFn({ method: "POST" })
     if (!domain || !domain.includes(".")) {
       return { deliverable: false, checked: true, reason: "format" as const };
     }
-
-    const cached = MX_CACHE.get(domain);
-    if (cached && cached.expires > Date.now()) {
-      return { deliverable: cached.ok, checked: true, reason: cached.ok ? undefined : ("no_mx" as const) };
-    }
-
-    async function doh(type: "MX" | "A" | "AAAA"): Promise<boolean> {
-      const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=${type}`;
-      const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), 2500);
-      try {
-        const res = await fetch(url, {
-          headers: { accept: "application/dns-json" },
-          signal: ctl.signal,
-        });
-        if (!res.ok) return false;
-        const json = (await res.json()) as { Status?: number; Answer?: Array<{ data: string }> };
-        // Status 0 = NOERROR. Status 3 = NXDOMAIN.
-        if (json.Status === 3) return false;
-        return Array.isArray(json.Answer) && json.Answer.length > 0;
-      } catch {
-        return false;
-      } finally {
-        clearTimeout(timer);
-      }
-    }
-
-    try {
-      const hasMx = await doh("MX");
-      // RFC 5321 §5.1 — fall back to A/AAAA if no MX. Some domains rely on this.
-      const ok = hasMx || (await doh("A")) || (await doh("AAAA"));
-      MX_CACHE.set(domain, { ok, expires: Date.now() + MX_CACHE_TTL_MS });
-      return { deliverable: ok, checked: true, reason: ok ? undefined : ("no_mx" as const) };
-    } catch {
-      // Lenient on infra errors
-      return { deliverable: true, checked: false };
-    }
+    const ok = await checkDomainDeliverable(domain);
+    return { deliverable: ok, checked: true, reason: ok ? undefined : ("no_mx" as const) };
   });
+
 
 
 // ---------- recordLoginAttempt / checkLockout ---------- //
