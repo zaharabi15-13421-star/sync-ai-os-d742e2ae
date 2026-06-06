@@ -607,7 +607,7 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
         </div>
         <FieldError msg={errors.acceptTerms} />
 
-        <PrimaryButton type="submit" loading={loading} disabled={loading} className="mt-2">
+        <PrimaryButton type="submit" loading={loading} disabled={!canSubmit} className="mt-2">
           {loading ? (
             <span className="inline-flex items-center gap-2 justify-center">
               <Loader2 className="h-4 w-4 animate-spin" /> Creating your account…
