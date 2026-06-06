@@ -349,29 +349,31 @@ function EntryScreen({
         </p>
       </header>
 
-      <div
-        className="flex p-[3px] mb-5"
-        style={{ background: "var(--auth-bg-base)", borderRadius: 10 }}
-        role="tablist"
-      >
-        {(["signup", "login"] as AuthTab[]).map((t) => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
-            className="flex-1 py-2 text-[14px] transition-colors"
-            style={{
-              background: tab === t ? "var(--auth-border)" : "transparent",
-              borderRadius: 8,
-              color: tab === t ? "var(--auth-text-primary)" : "var(--auth-text-muted)",
-              fontWeight: tab === t ? 500 : 400,
-            }}
-          >
-            {t === "signup" ? "Sign up" : "Log in"}
-          </button>
-        ))}
-      </div>
+      {!hideTabs && (
+        <div
+          className="flex p-[3px] mb-5"
+          style={{ background: "var(--auth-bg-base)", borderRadius: 10 }}
+          role="tablist"
+        >
+          {(["signup", "login"] as AuthTab[]).map((t) => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => setTab(t)}
+              className="flex-1 py-2 text-[14px] transition-colors"
+              style={{
+                background: tab === t ? "var(--auth-border)" : "transparent",
+                borderRadius: 8,
+                color: tab === t ? "var(--auth-text-primary)" : "var(--auth-text-muted)",
+                fontWeight: tab === t ? 500 : 400,
+              }}
+            >
+              {t === "signup" ? "Sign up" : "Log in"}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="space-y-3">
         <GoogleOAuthButton onClick={handleGoogle} loading={googleLoading} />
