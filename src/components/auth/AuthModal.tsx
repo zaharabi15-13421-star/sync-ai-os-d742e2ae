@@ -526,17 +526,21 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
           error={errors.companyName}
           valid={!errors.companyName && sanitizeText(v.companyName).length >= 2}
         />
-        <TextField
-          label="Email"
-          required
-          type="email"
-          placeholder="you@brand.com"
-          value={v.email}
-          onChange={(e) => setField("email", e.target.value)}
-          onBlur={handleEmailBlur}
-          error={errors.email}
-          valid={!errors.email && EMAIL_REGEX.test(v.email) && !emailExists && !emailChecking}
-        />
+        <div ref={emailRef}>
+          <EmailField
+            value={email.emailValue}
+            state={email.emailState}
+            error={email.emailError}
+            typoSuggestion={email.emailTypoSuggestion}
+            isCheckingDuplicate={email.isCheckingDuplicate}
+            duplicateExists={email.duplicateExists}
+            onChange={email.handleEmailChange}
+            onBlur={email.handleEmailBlur}
+            onPaste={email.handleEmailPaste}
+            onAcceptTypo={email.acceptTypoSuggestion}
+            onDismissTypo={email.dismissTypoWarning}
+          />
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <SelectField
             label="Industry"
