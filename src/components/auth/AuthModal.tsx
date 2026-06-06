@@ -4,7 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, Mail, CheckCircle2, KeyRound, LockOpen, AlertCircle, AlertTriangle, Loader2, Check, ShieldCheck, RefreshCw, Pencil, HelpCircle } from "lucide-react";
+import { X, Sparkles, Mail, CheckCircle2, KeyRound, LockOpen, AlertCircle, AlertTriangle, Loader2, Check, ShieldCheck, RefreshCw, Pencil, HelpCircle, Clock } from "lucide-react";
+import { useEmailVerificationDetection } from "@/hooks/useEmailVerificationDetection";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import {
@@ -635,6 +636,11 @@ function VerifyScreen({
 }: { email: string; userId: string | null; onSuccess: () => void; onChangeEmail: () => void; startedAt: number }) {
   const [seconds, setSeconds] = useState(45);
   const [resending, setResending] = useState(false);
+  const { pollingTimedOut } = useEmailVerificationDetection({
+    userId,
+    email,
+    enabled: true,
+  });
 
   useEffect(() => {
     if (seconds <= 0) return;
@@ -761,6 +767,23 @@ function VerifyScreen({
           </button>
         );
       })()}
+
+      {pollingTimedOut && (
+        <div
+          className="mt-3 flex items-start gap-2 text-left"
+          style={{
+            background: "rgba(245,158,11,0.08)",
+            border: "0.5px solid rgba(245,158,11,0.25)",
+            borderRadius: 8,
+            padding: "12px 14px",
+          }}
+        >
+          <Clock className="h-3.5 w-3.5 mt-0.5 shrink-0" style={{ color: "#F59E0B" }} />
+          <p className="text-[12px] leading-[1.5]" style={{ color: "#F59E0B" }}>
+            Still waiting for verification. Check your spam folder or request a new link.
+          </p>
+        </div>
+      )}
 
       {/* 9. Change email button */}
       <button

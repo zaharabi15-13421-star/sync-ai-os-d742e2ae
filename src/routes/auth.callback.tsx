@@ -1,50 +1,334 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { AUTH_BROADCAST_CHANNEL } from "@/hooks/useEmailVerificationDetection";
 
 const POST_AUTH_REDIRECT_KEY = "brandsync_post_auth_redirect";
 const DASHBOARD_PATH = "/dashboard/intelligence";
+const AUTO_REDIRECT_MS = 2500;
+
+type CallbackState = "processing" | "success" | "already_verified" | "error";
 
 export const Route = createFileRoute("/auth/callback")({
   component: AuthCallback,
 });
 
 function AuthCallback() {
-  useEffect(() => {
-    const finishSignIn = async () => {
-      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const searchParams = new URLSearchParams(window.location.search.replace(/^\?/, ""));
-      const accessToken = hashParams.get("access_token") ?? searchParams.get("access_token");
-      const refreshToken = hashParams.get("refresh_token") ?? searchParams.get("refresh_token");
-      const redirectPath = localStorage.getItem(POST_AUTH_REDIRECT_KEY) ?? DASHBOARD_PATH;
+  const [state, setState] = useState<CallbackState>("processing");
+  const [errorMessage, setErrorMessage] = useState<string>(
+    "This verification link has expired or is no longer valid. Please request a new one.",
+  );
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const processingTimeout = setTimeout(() => {
+      if (!cancelled && state === "processing") {
+        setState("error");
+      }
+    }, 5000);
+
+    const broadcastVerified = (userId: string, email: string | undefined) => {
       try {
-        if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-          if (error) throw error;
-        } else {
-          const { data } = await supabase.auth.getSession();
-          if (!data.session) throw new Error("No session returned from Google sign-in.");
+        const ch = new BroadcastChannel(AUTH_BROADCAST_CHANNEL);
+        ch.postMessage({
+          type: "EMAIL_VERIFIED",
+          userId,
+          email,
+          timestamp: Date.now(),
+          source: "auth_callback",
+        });
+        ch.close();
+      } catch { /* noop */ }
+    };
+
+    const goToDashboard = () => {
+      const redirectPath = localStorage.getItem(POST_AUTH_REDIRECT_KEY) ?? DASHBOARD_PATH;
+      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+      window.location.href = redirectPath;
+    };
+
+    const run = async () => {
+      try {
+        const hash = window.location.hash.replace(/^#/, "");
+        const hashParams = new URLSearchParams(hash);
+        const searchParams = new URLSearchParams(window.location.search.replace(/^\?/, ""));
+
+        const accessToken = hashParams.get("access_token") ?? searchParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token") ?? searchParams.get("refresh_token");
+        const code = searchParams.get("code");
+        const tokenHash = searchParams.get("token_hash");
+        const type = searchParams.get("type") as "signup" | "magiclink" | "recovery" | "email" | null;
+        const errParam = hashParams.get("error") ?? searchParams.get("error");
+        const errDesc =
+          hashParams.get("error_description") ?? searchParams.get("error_description");
+
+        if (errParam) {
+          if (!cancelled) {
+            setErrorMessage(
+              errDesc?.replace(/\+/g, " ") ??
+                "This verification link has expired or is no longer valid. Please request a new one.",
+            );
+            setState("error");
+          }
+          return;
         }
-        localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
-        window.location.replace(redirectPath);
-      } catch (error) {
-        console.error("[auth callback] sign-in completion failed", error);
-        localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
-        window.location.replace("/");
+
+        // Try exchanges in order
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+        } else if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) throw error;
+        } else if (tokenHash && type) {
+          const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+          if (error) throw error;
+        }
+
+        // Clear sensitive params from URL
+        window.history.replaceState(null, "", window.location.pathname);
+
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        const session = data.session;
+
+        if (!session?.user) {
+          if (!cancelled) setState("error");
+          return;
+        }
+
+        const user = session.user;
+
+        if (!user.email_confirmed_at) {
+          if (!cancelled) {
+            setErrorMessage("Your email could not be confirmed. Please try again.");
+            setState("error");
+          }
+          return;
+        }
+
+        const confirmedAt = new Date(user.email_confirmed_at).getTime();
+        const isFresh = Date.now() - confirmedAt < 30_000;
+
+        // Fire-and-forget: mark email verified in profile + log event
+        void supabase
+          .from("profiles")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", user.id)
+          .then(() => undefined, () => undefined);
+
+        if (!isFresh) {
+          if (!cancelled) setState("already_verified");
+          return;
+        }
+
+        broadcastVerified(user.id, user.email);
+
+        if (!cancelled) {
+          setState("success");
+          redirectTimerRef.current = setTimeout(goToDashboard, AUTO_REDIRECT_MS);
+        }
+      } catch (err) {
+        console.error("[auth callback] failed", err);
+        if (!cancelled) setState("error");
       }
     };
 
-    void finishSignIn();
+    void run();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(processingTimeout);
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const cancelTimerAndGo = () => {
+    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    window.location.href = DASHBOARD_PATH;
+  };
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
-      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Completing sign-in…
-      </div>
+    <main
+      className="flex min-h-screen items-center justify-center px-4"
+      style={{ background: "#0F0F1A" }}
+    >
+      {state === "processing" && (
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin" style={{ color: "#7C3AED" }} />
+          <p className="text-[14px]" style={{ color: "#94A3B8" }}>
+            Verifying your email…
+          </p>
+        </div>
+      )}
+
+      {state === "success" && (
+        <div
+          className="text-center w-full"
+          style={{
+            maxWidth: 400,
+            background: "#1A1A2E",
+            border: "0.5px solid #22C55E",
+            borderRadius: 16,
+            padding: "40px 32px",
+          }}
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.1, duration: 0.3, ease: "easeOut" }}
+            className="mx-auto grid place-items-center"
+            style={{
+              width: 64,
+              height: 64,
+              background: "rgba(34,197,94,0.15)",
+              borderRadius: "50%",
+            }}
+          >
+            <CheckCircle2 className="h-7 w-7" style={{ color: "#22C55E" }} />
+          </motion.div>
+          <h1
+            className="text-[22px] font-medium"
+            style={{ color: "#22C55E", marginTop: 20 }}
+          >
+            Email verified!
+          </h1>
+          <p
+            className="text-[14px]"
+            style={{ color: "#94A3B8", lineHeight: 1.6, marginTop: 8 }}
+          >
+            Your account is ready. Welcome to BrandSync AI — your marketing OS is waiting.
+          </p>
+          <div
+            style={{
+              width: "100%",
+              height: 3,
+              background: "#2D2D4E",
+              borderRadius: 2,
+              marginTop: 24,
+              overflow: "hidden",
+            }}
+          >
+            <motion.div
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: AUTO_REDIRECT_MS / 1000, ease: "linear" }}
+              style={{ height: "100%", background: "#7C3AED", borderRadius: 2 }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={cancelTimerAndGo}
+            className="w-full text-white"
+            style={{
+              background: "#7C3AED",
+              borderRadius: 10,
+              padding: "13px 24px",
+              fontSize: 14,
+              fontWeight: 500,
+              marginTop: 20,
+            }}
+          >
+            Enter dashboard →
+          </button>
+        </div>
+      )}
+
+      {state === "already_verified" && (
+        <div
+          className="text-center w-full"
+          style={{
+            maxWidth: 400,
+            background: "#1A1A2E",
+            border: "0.5px solid rgba(34,197,94,0.4)",
+            borderRadius: 16,
+            padding: "32px 28px",
+          }}
+        >
+          <CheckCircle2 className="h-8 w-8 mx-auto" style={{ color: "#22C55E" }} />
+          <h1 className="text-[18px] font-medium" style={{ color: "#E2E8F0", marginTop: 16 }}>
+            Already verified!
+          </h1>
+          <p className="text-[13px]" style={{ color: "#94A3B8", marginTop: 8, lineHeight: 1.6 }}>
+            Your email is already confirmed. Head to your dashboard to continue.
+          </p>
+          <button
+            type="button"
+            onClick={() => (window.location.href = DASHBOARD_PATH)}
+            className="w-full text-white"
+            style={{
+              background: "#7C3AED",
+              borderRadius: 10,
+              padding: "13px 24px",
+              fontSize: 14,
+              fontWeight: 500,
+              marginTop: 20,
+            }}
+          >
+            Go to dashboard
+          </button>
+        </div>
+      )}
+
+      {state === "error" && (
+        <div
+          className="text-center w-full"
+          style={{
+            maxWidth: 400,
+            background: "#1A1A2E",
+            border: "0.5px solid rgba(239,68,68,0.4)",
+            borderRadius: 16,
+            padding: "32px 28px",
+          }}
+        >
+          <AlertCircle className="h-8 w-8 mx-auto" style={{ color: "#EF4444" }} />
+          <h1 className="text-[18px] font-medium" style={{ color: "#E2E8F0", marginTop: 16 }}>
+            Verification failed
+          </h1>
+          <p className="text-[13px]" style={{ color: "#94A3B8", marginTop: 8, lineHeight: 1.6 }}>
+            {errorMessage}
+          </p>
+          <Link
+            to="/"
+            className="block w-full text-white"
+            style={{
+              background: "#7C3AED",
+              borderRadius: 10,
+              padding: "13px 24px",
+              fontSize: 14,
+              fontWeight: 500,
+              marginTop: 20,
+              textDecoration: "none",
+            }}
+          >
+            Request new link
+          </Link>
+          <Link
+            to="/"
+            className="block w-full"
+            style={{
+              background: "transparent",
+              border: "0.5px solid #2D2D4E",
+              color: "#94A3B8",
+              borderRadius: 10,
+              padding: "11px 24px",
+              fontSize: 13,
+              marginTop: 10,
+              textDecoration: "none",
+            }}
+          >
+            Back to home
+          </Link>
+        </div>
+      )}
     </main>
   );
 }
