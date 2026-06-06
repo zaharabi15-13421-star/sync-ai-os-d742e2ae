@@ -241,6 +241,7 @@ export function useEmailValidation(): UseEmailValidationResult {
     blurredOnce.current = true;
     if (typingTimer.current) clearTimeout(typingTimer.current);
     if (dupTimer.current) clearTimeout(dupTimer.current);
+    if (deliverabilityTimer.current) clearTimeout(deliverabilityTimer.current);
     computeState(emailValue, true);
     const fmt = applyFormat(emailValue);
     const lower = emailValue.trim().toLowerCase();
@@ -249,9 +250,13 @@ export function useEmailValidation(): UseEmailValidationResult {
       if (typo.isTypo) return;
     }
     if (fmt.valid) {
-      dupTimer.current = setTimeout(() => runDuplicateCheck(emailValue), DUP_DEBOUNCE_MS);
+      deliverabilityTimer.current = setTimeout(async () => {
+        const ok = await runDeliverabilityCheck(emailValue);
+        if (ok) runDuplicateCheck(emailValue);
+      }, 300);
     }
-  }, [emailValue, computeState, applyFormat, runDuplicateCheck]);
+  }, [emailValue, computeState, applyFormat, runDeliverabilityCheck, runDuplicateCheck]);
+
 
   const handleEmailPaste = useCallback(
     (_e: React.ClipboardEvent<HTMLInputElement>) => {
