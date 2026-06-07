@@ -46,6 +46,18 @@ type Mode = "choose" | "create" | "login" | "success";
 const POST_AUTH_REDIRECT_KEY = "brandsync_post_auth_redirect";
 const DASHBOARD_PATH = "/dashboard/intelligence";
 
+async function finishAuthenticatedRedirect() {
+  localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
+
+  for (let i = 0; i < 8; i += 1) {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) break;
+    await new Promise((resolve) => setTimeout(resolve, 125));
+  }
+
+  window.location.replace(DASHBOARD_PATH);
+}
+
 function getGoogleSignInRedirectOrigin() {
   if (typeof window === "undefined") return "";
   return window.location.origin;
@@ -80,7 +92,7 @@ export function RegisterDemoModal({ open, onOpenChange }: { open: boolean; onOpe
       if (result.redirected) return; // browser will navigate
       // Tokens received — session is set
       toast.success("Welcome to BrandSync AI!");
-      window.location.href = DASHBOARD_PATH;
+      await finishAuthenticatedRedirect();
     } catch (e) {
       localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.error("Google sign-in failed", {
@@ -276,6 +288,7 @@ function LoginForm({ onBack, onDone }: { onBack: () => void; onDone: () => void 
     }
     toast.success("Welcome back!");
     onDone();
+    await finishAuthenticatedRedirect();
   };
 
   return (
@@ -317,9 +330,9 @@ function SuccessPanel({ onClose }: { onClose: () => void }) {
         Your workspace is ready. Mr. Zarvis will guide you from here.
       </DialogDescription>
       <div className="mt-5 flex flex-col gap-2">
-        <a href="/dashboard/intelligence" className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 h-11 font-medium">
+        <button type="button" onClick={() => void finishAuthenticatedRedirect()} className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 h-11 font-medium">
           Open my dashboard
-        </a>
+        </button>
         <button onClick={onClose} className="text-sm text-muted-foreground hover:text-foreground">Close</button>
       </div>
     </div>
