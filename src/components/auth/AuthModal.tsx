@@ -164,6 +164,22 @@ interface AuthModalProps {
 const DASHBOARD_PATH = "/dashboard/intelligence";
 const POST_AUTH_REDIRECT_KEY = "brandsync_post_auth_redirect";
 
+async function finishAuthenticatedRedirect() {
+  localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
+
+  for (let i = 0; i < 8; i += 1) {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) {
+      window.location.replace(DASHBOARD_PATH);
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 125));
+  }
+
+  localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+  toast.error("Sign-in was not completed. Please try again.");
+}
+
 export function AuthModal({ open, onOpenChange, initialTab = "signup" }: AuthModalProps) {
   const [screen, setScreen] = useState<AuthScreen>(initialTab === "login" ? "login" : "entry");
   const [tab, setTab] = useState<AuthTab>(initialTab);
@@ -310,7 +326,6 @@ function EntryScreen({
   tab, setTab, onEmail, onGoogleDone,
 }: { tab: AuthTab; setTab: (t: AuthTab) => void; onEmail: () => void; onGoogleDone: () => void }) {
   const [googleLoading, setGoogleLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
@@ -328,10 +343,9 @@ function EntryScreen({
         return;
       }
       if (result.redirected) return;
-      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.success("Welcome to BrandSync AI!");
       onGoogleDone();
-      navigate({ to: DASHBOARD_PATH });
+      await finishAuthenticatedRedirect();
     } catch (e) {
       localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.error("Google sign-in failed", { description: e instanceof Error ? e.message : "Please try again." });
@@ -819,14 +833,13 @@ function VerifyScreen({
 // Screen 4: Success
 // ============================================================
 function SuccessScreen({ onClose }: { onClose: () => void }) {
-  const navigate = useNavigate();
   useEffect(() => {
     const t = setTimeout(() => {
       onClose();
-      navigate({ to: DASHBOARD_PATH });
+      void finishAuthenticatedRedirect();
     }, 2000);
     return () => clearTimeout(t);
-  }, [onClose, navigate]);
+  }, [onClose]);
 
   return (
     <div
@@ -848,7 +861,7 @@ function SuccessScreen({ onClose }: { onClose: () => void }) {
       </p>
       <PrimaryButton
         type="button"
-        onClick={() => { onClose(); navigate({ to: DASHBOARD_PATH }); }}
+        onClick={() => { onClose(); void finishAuthenticatedRedirect(); }}
         className="mt-5"
       >
         Enter dashboard →
@@ -874,7 +887,6 @@ function LoginScreen({
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [shake, setShake] = useState(false);
-  const navigate = useNavigate();
   const recordFailure = useServerFn(recordLoginFailure);
   const clearAttempts = useServerFn(clearLoginAttempts);
   const checkLock = useServerFn(checkLoginLockout);
@@ -908,9 +920,8 @@ function LoginScreen({
         return;
       }
       if (result.redirected) return;
-      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       onGoogleDone();
-      navigate({ to: DASHBOARD_PATH });
+      await finishAuthenticatedRedirect();
     } catch (e) {
       localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.error("Google sign-in failed");
@@ -948,7 +959,7 @@ function LoginScreen({
       }).catch(() => {});
       toast.success("Welcome back!");
       onSuccess();
-      navigate({ to: DASHBOARD_PATH });
+      await finishAuthenticatedRedirect();
     } catch (err) {
       const res = await recordFailure({ data: { email: email.toLowerCase() } }).catch(() => null);
       setServerError("Incorrect email or password. Please try again.");
@@ -1209,7 +1220,6 @@ function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
   const [confirm, setConfirm] = useState("");
   const [errors, setErrors] = useState<{ pw?: string; confirm?: string }>({});
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const match = useMemo(() => confirm.length > 0 && confirm === pw, [pw, confirm]);
 
   const submit = async (e: React.FormEvent) => {
@@ -1225,7 +1235,7 @@ function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
       if (error) throw error;
       logAuthEventFn({ data: { eventType: "password_reset_completed", userId: data.user?.id ?? null } }).catch(() => {});
       toast.success("Password updated successfully");
-      setTimeout(() => { onDone(); navigate({ to: DASHBOARD_PATH }); }, 1000);
+      setTimeout(() => { onDone(); void finishAuthenticatedRedirect(); }, 1000);
     } catch (e) {
       toast.error("Couldn't update password", { description: e instanceof Error ? e.message : undefined });
       setLoading(false);
