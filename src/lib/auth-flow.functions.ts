@@ -7,6 +7,8 @@ import {
   resetReqSchema,
   otpSchema,
 } from "@/utils/validators";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
 
 // ---------- shared helpers ---------- //
 async function logEvent(
@@ -323,31 +325,35 @@ export const recordLoginFailure = createServerFn({ method: "POST" })
   });
 
 export const clearLoginAttempts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ email: z.string().email() }).parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const email = data.email.toLowerCase();
+    const claimEmail = (context.claims as { email?: string } | undefined)?.email?.toLowerCase();
+    if (!claimEmail || claimEmail !== email) {
+      throw new Error("Unauthorized");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("login_attempts").delete().eq("email", data.email.toLowerCase());
+    await supabaseAdmin.from("login_attempts").delete().eq("email", email);
     return { ok: true };
   });
 
 // ---------- markEmailVerified ---------- //
 export const markEmailVerified = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ email: z.string().email() }).parse(input))
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
     const email = data.email.toLowerCase();
+    const claimEmail = (context.claims as { email?: string } | undefined)?.email?.toLowerCase();
+    if (!claimEmail || claimEmail !== email) {
+      throw new Error("Unauthorized");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin
       .from("user_profiles")
       .update({ email_verified: true })
       .eq("email", email);
-    const { data: row } = await supabaseAdmin
-      .from("user_profiles")
-      .select("user_id")
-      .eq("email", email)
-      .maybeSingle();
-    if (row?.user_id) {
-      await logEvent(row.user_id, "email_verified", {}, getIp(), getUa());
-    }
+    await logEvent(context.userId, "email_verified", {}, getIp(), getUa());
     return { ok: true };
   });
 
@@ -356,16 +362,38 @@ export const logAuthEventFn = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
       .object({
-        userId: z.string().uuid().nullable().optional(),
         eventType: z.string().min(1).max(80),
         metadata: z.record(z.string(), z.unknown()).optional(),
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    await logEvent(data.userId ?? null, data.eventType, data.metadata ?? {}, getIp(), getUa());
+    // Derive userId from bearer token if present; never trust client-supplied IDs.
+    let resolvedUserId: string | null = null;
+    try {
+      const authHeader = getRequestHeader("authorization");
+      if (authHeader?.startsWith("Bearer ")) {
+        const token = authHeader.slice("Bearer ".length);
+        if (token) {
+          const SUPABASE_URL = process.env.SUPABASE_URL;
+          const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+          if (SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY) {
+            const { createClient } = await import("@supabase/supabase-js");
+            const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+              auth: { persistSession: false, autoRefreshToken: false },
+            });
+            const { data: claimsData } = await sb.auth.getClaims(token);
+            resolvedUserId = claimsData?.claims?.sub ?? null;
+          }
+        }
+      }
+    } catch {
+      // ignore — logging should never throw
+    }
+    await logEvent(resolvedUserId, data.eventType, data.metadata ?? {}, getIp(), getUa());
     return { ok: true };
   });
+
 
 // ---------- requestPasswordReset ---------- //
 export const requestPasswordReset = createServerFn({ method: "POST" })

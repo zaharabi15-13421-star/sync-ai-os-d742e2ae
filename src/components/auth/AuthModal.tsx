@@ -666,7 +666,7 @@ function VerifyScreen({
       if (e) throw e;
       toast.success(`Verification email resent to ${email}`);
       setSeconds(45);
-      logAuthEventFn({ data: { eventType: "email_verification_resent", userId } }).catch(() => {});
+      logAuthEventFn({ data: { eventType: "email_verification_resent" } }).catch(() => {});
     } catch (err) {
       toast.error("Couldn't resend email", { description: err instanceof Error ? err.message : undefined });
     } finally {
@@ -955,7 +955,7 @@ function LoginScreen({
       if (error) throw error;
       await clearAttempts({ data: { email: email.toLowerCase() } });
       logAuthEventFn({
-        data: { eventType: "login_success", userId: data.user?.id ?? null, metadata: { remember_me: remember } },
+        data: { eventType: "login_success", metadata: { remember_me: remember } },
       }).catch(() => {});
       toast.success("Welcome back!");
       onSuccess();
@@ -1233,7 +1233,7 @@ function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
     try {
       const { data, error } = await supabase.auth.updateUser({ password: pw });
       if (error) throw error;
-      logAuthEventFn({ data: { eventType: "password_reset_completed", userId: data.user?.id ?? null } }).catch(() => {});
+      logAuthEventFn({ data: { eventType: "password_reset_completed" } }).catch(() => {});
       toast.success("Password updated successfully");
       setTimeout(() => { onDone(); void finishAuthenticatedRedirect(); }, 1000);
     } catch (e) {
