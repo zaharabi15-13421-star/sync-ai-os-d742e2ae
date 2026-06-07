@@ -283,7 +283,15 @@ export const detectBrandAssets = createServerFn({ method: "POST" })
     };
 
     if (detect.has("logo")) {
-      result.logo_url = branding?.logo || branding?.images?.logo || pickLogoFromHtml(html, data.url);
+      // Prefer the real <img> logo extracted from the live page HTML, then
+      // Firecrawl's branding.logo / branding.images.logo. We deliberately
+      // avoid favicons so the displayed logo matches the website exactly.
+      const htmlLogo = html ? pickLogoFromHtml(html, data.url) : null;
+      const brandingLogo =
+        (typeof branding?.logo === "string" && branding.logo) ||
+        (typeof branding?.images?.logo === "string" && branding.images.logo) ||
+        null;
+      result.logo_url = htmlLogo || brandingLogo || null;
     }
     if (detect.has("tagline")) {
       result.tagline = pickTaglineFromHtml(html);
