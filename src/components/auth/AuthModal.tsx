@@ -829,14 +829,13 @@ function VerifyScreen({
 // Screen 4: Success
 // ============================================================
 function SuccessScreen({ onClose }: { onClose: () => void }) {
-  const navigate = useNavigate();
   useEffect(() => {
     const t = setTimeout(() => {
       onClose();
-      navigate({ to: DASHBOARD_PATH });
+      void finishAuthenticatedRedirect();
     }, 2000);
     return () => clearTimeout(t);
-  }, [onClose, navigate]);
+  }, [onClose]);
 
   return (
     <div
@@ -858,7 +857,7 @@ function SuccessScreen({ onClose }: { onClose: () => void }) {
       </p>
       <PrimaryButton
         type="button"
-        onClick={() => { onClose(); navigate({ to: DASHBOARD_PATH }); }}
+        onClick={() => { onClose(); void finishAuthenticatedRedirect(); }}
         className="mt-5"
       >
         Enter dashboard →
@@ -884,7 +883,6 @@ function LoginScreen({
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [shake, setShake] = useState(false);
-  const navigate = useNavigate();
   const recordFailure = useServerFn(recordLoginFailure);
   const clearAttempts = useServerFn(clearLoginAttempts);
   const checkLock = useServerFn(checkLoginLockout);
@@ -1234,7 +1232,7 @@ function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
       if (error) throw error;
       logAuthEventFn({ data: { eventType: "password_reset_completed", userId: data.user?.id ?? null } }).catch(() => {});
       toast.success("Password updated successfully");
-      setTimeout(() => { onDone(); navigate({ to: DASHBOARD_PATH }); }, 1000);
+      setTimeout(() => { onDone(); void finishAuthenticatedRedirect(); }, 1000);
     } catch (e) {
       toast.error("Couldn't update password", { description: e instanceof Error ? e.message : undefined });
       setLoading(false);
