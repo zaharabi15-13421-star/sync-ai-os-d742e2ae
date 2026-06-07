@@ -65,9 +65,8 @@ export function RegisterDemoModal({ open, onOpenChange }: { open: boolean; onOpe
     setGoogleLoading(true);
     try {
       localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
-      const redirectOrigin = getGoogleSignInRedirectOrigin();
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${redirectOrigin}/auth/callback`,
+        redirect_uri: getGoogleSignInRedirectOrigin(),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
@@ -179,7 +178,7 @@ function CreateForm({ onBack, onDone }: { onBack: () => void; onDone: () => void
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard/intelligence`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
           brand_name: parsed.data.brandName,
           industry: parsed.data.industry,
