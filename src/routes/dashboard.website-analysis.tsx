@@ -531,6 +531,16 @@ function Results({
         )}
       </SectionCard>
 
+      {/* New editable brand sections */}
+      <BrandSummaryExtensions
+        ctx={{
+          brandName: a.title ?? undefined,
+          url: a.url,
+          summary: a.summary ?? undefined,
+          colors: palette,
+        }}
+      />
+
       {/* R3 Typography */}
       <SectionCard>
         <SectionHeader icon={<Type className="h-4 w-4 text-purple-300" />} title="Typography" />
