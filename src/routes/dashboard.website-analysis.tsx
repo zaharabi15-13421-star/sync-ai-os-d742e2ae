@@ -63,7 +63,7 @@ function ensureUrl(d: string) {
 }
 
 function WebsiteIntelligencePage() {
-  const [tab, setTab] = useState<"brand" | "seo">("brand");
+  const [tab, setTab] = useState<"brand" | "details" | "seo">("brand");
   const [sharedUrl, setSharedUrl] = useState("");
 
   return (
@@ -81,13 +81,19 @@ function WebsiteIntelligencePage() {
         </p>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "brand" | "seo")} className="w-full">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "brand" | "details" | "seo")} className="w-full">
         <TabsList className="bg-white/[0.04] border border-white/10 p-1 rounded-full">
           <TabsTrigger
             value="brand"
             className="rounded-full px-5 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
           >
             Brand Summary
+          </TabsTrigger>
+          <TabsTrigger
+            value="details"
+            className="rounded-full px-5 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+          >
+            Brand Details
           </TabsTrigger>
           <TabsTrigger
             value="seo"
@@ -99,6 +105,9 @@ function WebsiteIntelligencePage() {
 
         <TabsContent value="brand" className="mt-6">
           <BrandSummaryTab sharedUrl={sharedUrl} setSharedUrl={setSharedUrl} />
+        </TabsContent>
+        <TabsContent value="details" className="mt-6">
+          <BrandDetailsTab />
         </TabsContent>
         <TabsContent value="seo" className="mt-6">
           <SeoTrackerTab sharedUrl={sharedUrl} setSharedUrl={setSharedUrl} />
