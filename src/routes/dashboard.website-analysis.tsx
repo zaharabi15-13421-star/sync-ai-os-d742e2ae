@@ -31,6 +31,7 @@ import {
   generateSeoData,
 } from "@/lib/website-intelligence.functions";
 import { BrandDetailsTab } from "@/components/brand-details/BrandDetailsTab";
+import { BrandSummaryExtensions } from "@/components/brand-summary/BrandSummaryExtensions";
 
 export const Route = createFileRoute("/dashboard/website-analysis")({
   component: WebsiteIntelligencePage,
