@@ -488,94 +488,28 @@ function Results({
         </Button>
       </div>
 
-      {/* Page info */}
+      {/* Page info — live tag + url */}
       <SectionCard>
-        <div className="flex items-center gap-2 text-xs text-emerald-300">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Live homepage analysis
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 text-xs text-emerald-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live homepage analysis
+          </div>
+          <a href={a.url} target="_blank" rel="noreferrer" className="text-xs text-purple-300 hover:underline inline-flex items-center gap-1">
+            {a.url} <ExternalLink className="h-3 w-3" />
+          </a>
         </div>
-        <h2 className="mt-2 text-lg font-semibold">{a.title ?? a.url}</h2>
-        <a href={a.url} target="_blank" rel="noreferrer" className="text-xs text-purple-300 hover:underline inline-flex items-center gap-1 mt-1">
-          {a.url} <ExternalLink className="h-3 w-3" />
-        </a>
-        {a.description && <p className="text-sm mt-3 text-foreground/90">{a.description}</p>}
-        <div className="mt-3 text-[11px] text-muted-foreground">
+        <div className="mt-2 text-[11px] text-muted-foreground">
           Analyzed {a.analyzed_at ? new Date(a.analyzed_at).toLocaleString() : "—"}
         </div>
       </SectionCard>
 
-      {/* R1 Summary */}
-      {a.summary && (
-        <SectionCard>
-          <SectionHeader icon={<FileText className="h-4 w-4 text-purple-300" />} title="What Your Website Says About Your Business" />
-          <p className="mt-3 text-sm leading-relaxed text-foreground/90">{a.summary}</p>
-        </SectionCard>
-      )}
+      {/* Editable Brand Summary (all 14 fields) */}
+      <EditableBrandSummary initialFromAnalysis={{
+        url: a.url, title: a.title, description: a.description, summary: a.summary,
+        branding: a.branding, links,
+      }} />
 
-      {/* R2 Colors */}
-      <SectionCard>
-        <SectionHeader icon={<Palette className="h-4 w-4 text-purple-300" />} title="Brand Colors" />
-        {Object.keys(palette).length === 0 ? (
-          <div className="mt-3 text-xs text-muted-foreground">No palette detected.</div>
-        ) : (
-          <div className="mt-5 flex flex-wrap gap-5">
-            {Object.entries(palette).map(([k, v]) => (
-              <div key={k} className="flex flex-col items-center w-24">
-                <div className="h-14 w-14 rounded-full border border-white/15 shadow-inner" style={{ background: String(v) }} />
-                <div className="mt-2 text-xs font-medium capitalize text-center">{k.replace(/([A-Z])/g, " $1").trim()}</div>
-                <div className="text-[10px] font-mono text-muted-foreground">{String(v)}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </SectionCard>
-
-      {/* R3 Typography */}
-      <SectionCard>
-        <SectionHeader icon={<Type className="h-4 w-4 text-purple-300" />} title="Typography" />
-        {fonts.length === 0 ? (
-          <div className="mt-3 text-xs text-muted-foreground">No fonts detected.</div>
-        ) : (
-          <ul className="mt-4 space-y-2.5">
-            {fonts.slice(0, 6).map((f, i) => (
-              <li key={i} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2">
-                <span className="text-sm" style={{ fontFamily: f.family ?? undefined }}>{f.family ?? "—"}</span>
-                <span className="text-[11px] text-muted-foreground">{fontLabel(i)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </SectionCard>
-
-      {/* R4 Links */}
-      <SectionCard>
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <LinkIcon className="h-4 w-4 text-purple-300" /> Where Your Website Links To
-          <span className="ml-auto text-[11px] text-muted-foreground">{links.length} links</span>
-        </div>
-        {grouped.length === 0 ? (
-          <div className="mt-3 text-xs text-muted-foreground">No outbound links found.</div>
-        ) : (
-          <div className="mt-4 space-y-4 max-h-80 overflow-auto pr-1">
-            {grouped.map(([dom, urls]) => (
-              <div key={dom}>
-                <div className="text-xs font-medium text-foreground/90 flex items-center gap-2">
-                  <img src={faviconFromDomain(dom, 32)} alt="" className="h-3.5 w-3.5" />
-                  {dom}
-                  <span className="text-[10px] text-muted-foreground">({urls.length})</span>
-                </div>
-                <ul className="mt-1.5 ml-5 space-y-0.5">
-                  {urls.slice(0, 8).map((l) => (
-                    <li key={l} className="text-[11px] text-muted-foreground truncate">
-                      <a href={l} target="_blank" rel="noreferrer" className="hover:text-purple-300">{l}</a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
-      </SectionCard>
 
       {/* R5 Brand Health */}
       <SectionCard>
