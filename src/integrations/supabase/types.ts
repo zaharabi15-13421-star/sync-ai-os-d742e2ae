@@ -217,6 +217,111 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_details: {
+        Row: {
+          address_lines: string | null
+          business_hours: Json
+          business_hours_not_applicable: boolean
+          city: string | null
+          country_region_code: string | null
+          created_at: string
+          cta_appointment_url: string | null
+          cta_business_email: string | null
+          cta_custom_url: string | null
+          cta_order_ahead_url: string | null
+          cta_reservation_url: string | null
+          cta_shop_online_url: string | null
+          id: string
+          keywords: string[]
+          phone_number: string | null
+          postal_code: string | null
+          social_facebook: string | null
+          social_instagram: string | null
+          social_linkedin_company: string | null
+          social_linkedin_personal: string | null
+          social_pinterest: string | null
+          social_tiktok: string | null
+          social_twitter: string | null
+          social_youtube_channel: string | null
+          social_youtube_user: string | null
+          state_province: string | null
+          testimonial_1: string | null
+          testimonial_2: string | null
+          testimonial_3: string | null
+          testimonial_4: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address_lines?: string | null
+          business_hours?: Json
+          business_hours_not_applicable?: boolean
+          city?: string | null
+          country_region_code?: string | null
+          created_at?: string
+          cta_appointment_url?: string | null
+          cta_business_email?: string | null
+          cta_custom_url?: string | null
+          cta_order_ahead_url?: string | null
+          cta_reservation_url?: string | null
+          cta_shop_online_url?: string | null
+          id?: string
+          keywords?: string[]
+          phone_number?: string | null
+          postal_code?: string | null
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin_company?: string | null
+          social_linkedin_personal?: string | null
+          social_pinterest?: string | null
+          social_tiktok?: string | null
+          social_twitter?: string | null
+          social_youtube_channel?: string | null
+          social_youtube_user?: string | null
+          state_province?: string | null
+          testimonial_1?: string | null
+          testimonial_2?: string | null
+          testimonial_3?: string | null
+          testimonial_4?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address_lines?: string | null
+          business_hours?: Json
+          business_hours_not_applicable?: boolean
+          city?: string | null
+          country_region_code?: string | null
+          created_at?: string
+          cta_appointment_url?: string | null
+          cta_business_email?: string | null
+          cta_custom_url?: string | null
+          cta_order_ahead_url?: string | null
+          cta_reservation_url?: string | null
+          cta_shop_online_url?: string | null
+          id?: string
+          keywords?: string[]
+          phone_number?: string | null
+          postal_code?: string | null
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin_company?: string | null
+          social_linkedin_personal?: string | null
+          social_pinterest?: string | null
+          social_tiktok?: string | null
+          social_twitter?: string | null
+          social_youtube_channel?: string | null
+          social_youtube_user?: string | null
+          state_province?: string | null
+          testimonial_1?: string | null
+          testimonial_2?: string | null
+          testimonial_3?: string | null
+          testimonial_4?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       brand_guideline_files: {
         Row: {
           created_at: string
