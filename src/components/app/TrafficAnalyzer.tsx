@@ -1356,3 +1356,102 @@ function NoMatchBanner({
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────
+// Page Visitors — GA4 pagePath × screenPageViews table
+// ─────────────────────────────────────────────────────────────
+function PageVisitorsCard({ rows }: { rows: { page: string; views: number }[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? rows : rows.slice(0, 10);
+  return (
+    <GlassCard>
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-sm font-medium flex items-center gap-2"><ListIcon className="h-4 w-4 text-indigo-300" /> Page Visitors</div>
+        <Pill tone="emerald">GA4</Pill>
+      </div>
+      {rows.length === 0 ? (
+        <div className="py-6 text-center text-[13px] text-muted-foreground">No page data available for the selected period</div>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between border-b border-white/10 py-2 text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
+            <span>Page</span><span>Visitors</span>
+          </div>
+          {visible.map((r, i) => (
+            <div
+              key={r.page + i}
+              className={cn(
+                "flex items-center justify-between py-3 transition hover:bg-white/[0.03] -mx-2 px-2 rounded",
+                i < visible.length - 1 && "border-b border-white/10"
+              )}
+            >
+              <span
+                className="font-mono text-sm text-foreground/90 truncate"
+                style={{ maxWidth: "70%" }}
+                title={r.page}
+              >
+                {r.page}
+              </span>
+              <span className="text-sm font-semibold tabular-nums min-w-[60px] text-right">{r.views.toLocaleString()}</span>
+            </div>
+          ))}
+          {rows.length > 10 && (
+            <button
+              onClick={() => setExpanded((e) => !e)}
+              className="mt-3 text-xs text-purple-300 hover:text-purple-200 cursor-pointer"
+            >
+              {expanded ? "Show less ↑" : `View all ${rows.length} pages →`}
+            </button>
+          )}
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Country Visitors — GA4 country × sessions table with flag emojis
+// ─────────────────────────────────────────────────────────────
+function CountryVisitorsCard({ rows }: { rows: { country: string; sessions: number }[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? rows : rows.slice(0, 10);
+  return (
+    <GlassCard>
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-sm font-medium flex items-center gap-2"><MapPin className="h-4 w-4 text-emerald-300" /> Country Visitors</div>
+        <Pill tone="emerald">GA4</Pill>
+      </div>
+      {rows.length === 0 ? (
+        <div className="py-6 text-center text-[13px] text-muted-foreground">No country data available for the selected period</div>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between border-b border-white/10 py-2 text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
+            <span>Country</span><span>Visitors</span>
+          </div>
+          {visible.map((r, i) => (
+            <div
+              key={r.country + i}
+              className={cn(
+                "flex items-center justify-between py-3 transition hover:bg-white/[0.03] -mx-2 px-2 rounded",
+                i < visible.length - 1 && "border-b border-white/10"
+              )}
+            >
+              <span className="flex items-center gap-2.5 min-w-0">
+                <span className="text-lg leading-none flex-none" aria-hidden>{flagForCountryName(r.country)}</span>
+                <span className="text-sm text-foreground/90 truncate">{r.country}</span>
+              </span>
+              <span className="text-sm font-semibold tabular-nums min-w-[60px] text-right">{r.sessions.toLocaleString()}</span>
+            </div>
+          ))}
+          {rows.length > 10 && (
+            <button
+              onClick={() => setExpanded((e) => !e)}
+              className="mt-3 text-xs text-purple-300 hover:text-purple-200 cursor-pointer"
+            >
+              {expanded ? "Show less ↑" : `View all ${rows.length} countries →`}
+            </button>
+          )}
+        </div>
+      )}
+    </GlassCard>
+  );
+}
