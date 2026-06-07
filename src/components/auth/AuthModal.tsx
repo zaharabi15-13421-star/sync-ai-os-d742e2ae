@@ -162,6 +162,7 @@ interface AuthModalProps {
 }
 
 const DASHBOARD_PATH = "/dashboard/intelligence";
+const POST_AUTH_REDIRECT_KEY = "brandsync_post_auth_redirect";
 
 export function AuthModal({ open, onOpenChange, initialTab = "signup" }: AuthModalProps) {
   const [screen, setScreen] = useState<AuthScreen>(initialTab === "login" ? "login" : "entry");
@@ -314,21 +315,25 @@ function EntryScreen({
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
+      localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
       logAuthEventFn({ data: { eventType: "signup_method_selected", metadata: { method: "google" } } }).catch(() => {});
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/auth/callback`,
+        redirect_uri: window.location.origin,
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
+        localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
         toast.error("Google sign-in failed", { description: result.error.message });
         setGoogleLoading(false);
         return;
       }
       if (result.redirected) return;
+      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.success("Welcome to BrandSync AI!");
       onGoogleDone();
       navigate({ to: DASHBOARD_PATH });
     } catch (e) {
+      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.error("Google sign-in failed", { description: e instanceof Error ? e.message : "Please try again." });
       setGoogleLoading(false);
     }
@@ -453,7 +458,10 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
       });
       const { error: otpErr } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,
-        options: { shouldCreateUser: false },
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
       if (otpErr) console.warn("OTP send error", otpErr);
       logAuthEventFn({
