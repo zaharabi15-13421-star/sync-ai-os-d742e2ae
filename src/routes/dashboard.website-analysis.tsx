@@ -30,6 +30,7 @@ import {
   generateBrandIntelligence,
   generateSeoData,
 } from "@/lib/website-intelligence.functions";
+import { BrandDetailsTab } from "@/components/brand-details/BrandDetailsTab";
 
 export const Route = createFileRoute("/dashboard/website-analysis")({
   component: WebsiteIntelligencePage,
