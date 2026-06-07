@@ -1216,7 +1216,6 @@ function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
   const [confirm, setConfirm] = useState("");
   const [errors, setErrors] = useState<{ pw?: string; confirm?: string }>({});
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const match = useMemo(() => confirm.length > 0 && confirm === pw, [pw, confirm]);
 
   const submit = async (e: React.FormEvent) => {
