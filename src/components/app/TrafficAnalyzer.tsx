@@ -1071,22 +1071,7 @@ function PredictiveAnalytics({ baseVisits, baseUnique, baseBounce, domain }: { b
           {/* Risk Alert removed */}
 
 
-          {/* AI recommendations */}
-          <div>
-            <div className="text-xs uppercase tracking-widest text-indigo-300/80 mb-2">AI Recommendations</div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {recs.map((r) => (
-                <div key={r.title} className="rounded-xl border border-white/10 bg-white/[0.03] p-3 flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <r.icon className="h-4 w-4 text-purple-300" />
-                    <div className="text-sm font-semibold">{r.title}</div>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-1.5 flex-1 leading-relaxed">{r.desc}</p>
-                  <Button size="sm" variant="outline" className="mt-3 h-7 text-[11px] border-indigo-400/30 bg-indigo-500/10 text-indigo-200 hover:bg-indigo-500/20 self-start">Apply Suggestion</Button>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* AI Recommendations removed */}
         </motion.div>
       </div>
     </div>
