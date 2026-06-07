@@ -548,45 +548,6 @@ export type Database = {
           },
         ]
       }
-      brand_summary_extras: {
-        Row: {
-          brand_aesthetic: string[]
-          brand_archetype: Json | null
-          brand_tone: string[]
-          brand_values: string[]
-          created_at: string
-          id: string
-          logo_url: string | null
-          tagline: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          brand_aesthetic?: string[]
-          brand_archetype?: Json | null
-          brand_tone?: string[]
-          brand_values?: string[]
-          created_at?: string
-          id?: string
-          logo_url?: string | null
-          tagline?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          brand_aesthetic?: string[]
-          brand_archetype?: Json | null
-          brand_tone?: string[]
-          brand_values?: string[]
-          created_at?: string
-          id?: string
-          logo_url?: string | null
-          tagline?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       companies: {
         Row: {
           created_at: string

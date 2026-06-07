@@ -31,7 +31,6 @@ import {
   generateSeoData,
 } from "@/lib/website-intelligence.functions";
 import { BrandDetailsTab } from "@/components/brand-details/BrandDetailsTab";
-import { BrandSummaryExtensions } from "@/components/brand-summary/BrandSummaryExtensions";
 
 export const Route = createFileRoute("/dashboard/website-analysis")({
   component: WebsiteIntelligencePage,
@@ -530,16 +529,6 @@ function Results({
           </div>
         )}
       </SectionCard>
-
-      {/* New editable brand sections */}
-      <BrandSummaryExtensions
-        ctx={{
-          brandName: a.title ?? undefined,
-          url: a.url,
-          summary: a.summary ?? undefined,
-          colors: palette,
-        }}
-      />
 
       {/* R3 Typography */}
       <SectionCard>
