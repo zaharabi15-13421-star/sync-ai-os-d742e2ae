@@ -51,11 +51,15 @@ async function finishAuthenticatedRedirect() {
 
   for (let i = 0; i < 8; i += 1) {
     const { data } = await supabase.auth.getSession();
-    if (data.session?.access_token) break;
+    if (data.session?.access_token) {
+      window.location.replace(DASHBOARD_PATH);
+      return;
+    }
     await new Promise((resolve) => setTimeout(resolve, 125));
   }
 
-  window.location.replace(DASHBOARD_PATH);
+  localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+  toast.error("Sign-in was not completed. Please try again.");
 }
 
 function getGoogleSignInRedirectOrigin() {
