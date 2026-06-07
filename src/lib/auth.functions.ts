@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 function cleanDisplayName(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim().slice(0, 120) : null;
@@ -9,6 +8,7 @@ function cleanDisplayName(value: unknown) {
 export const ensureAuthWorkspace = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { userId, claims } = context;
     const c = claims as Record<string, any>;
     const metadata = (c.user_metadata ?? c.app_metadata ?? {}) as Record<string, any>;
