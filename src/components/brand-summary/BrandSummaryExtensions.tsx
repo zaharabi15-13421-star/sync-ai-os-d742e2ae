@@ -528,7 +528,7 @@ function ToneModal({
     setEnhancing(true);
     try {
       const res = await enhance({ data: { field: "brand_tone", current: v, context: ctx } });
-      setV(Array.from(new Set(res.value)).slice(0, 5));
+      setV(Array.from(new Set(res.value as string[])).slice(0, 5));
       toast.success("AI suggestions applied — review and save");
     } catch (e) { toast.error(e instanceof Error ? e.message : "AI failed"); }
     finally { setEnhancing(false); }
