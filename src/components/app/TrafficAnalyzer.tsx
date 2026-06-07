@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
-import { Calendar as CalendarIcon, Globe2, MousePointerClick, Users, Clock, TrendingUp, Search, Share2, Mail, Megaphone, ArrowUpRight, RefreshCw, MapPin, Sparkles, X, Link2, AlertTriangle, Wand2, CheckCircle2, Link as LinkIcon, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, Globe2, MousePointerClick, Users, Clock, TrendingUp, Search, Share2, Mail, Megaphone, ArrowUpRight, RefreshCw, MapPin, Sparkles, X, Link2, AlertTriangle, Wand2, CheckCircle2, Link as LinkIcon, Plus, List as ListIcon } from "lucide-react";
+import { COUNTRIES } from "@/data/countries";
 import { GlassCard, Pill, StatCard } from "@/components/app/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
