@@ -501,19 +501,11 @@ export function TrafficAnalyzer({ domain = "example.com" }: { domain?: string })
         </GlassCard>
       </div>
 
+      <PageVisitorsCard rows={pagesData} />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <GlassCard>
-          <div className="text-sm font-medium mb-3 flex items-center gap-2"><MapPin className="h-4 w-4 text-emerald-300" /> Top Countries</div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={geo} layout="vertical" margin={{ left: 20 }}>
-              <CartesianGrid stroke="oklch(1 0 0 / 0.06)" horizontal={false} />
-              <XAxis type="number" stroke="oklch(0.7 0.02 260)" tick={{ fontSize: 11 }} unit="%" />
-              <YAxis dataKey="country" type="category" stroke="oklch(0.7 0.02 260)" tick={{ fontSize: 11 }} width={100} />
-              <Tooltip contentStyle={{ background: "oklch(0.18 0.02 260)", border: "1px solid oklch(1 0 0 / 0.1)", borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="share" fill="oklch(0.65 0.22 280)" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </GlassCard>
+        <CountryVisitorsCard rows={countriesData} />
+
 
         <GlassCard>
           <div className="flex items-center justify-between mb-3">
