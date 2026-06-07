@@ -12,7 +12,7 @@ export const getBrandDetails = createServerFn({ method: "GET" })
       .eq("user_id", userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return { data: (data as BrandDetails | null) ?? { ...EMPTY_BRAND_DETAILS, user_id: userId } };
+    return { data: ((data as unknown) as BrandDetails | null) ?? { ...EMPTY_BRAND_DETAILS, user_id: userId } };
   });
 
 export const upsertBrandDetails = createServerFn({ method: "POST" })
