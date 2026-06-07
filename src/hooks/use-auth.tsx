@@ -39,10 +39,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    const bootstrap = (s: Session | null) => {
+    let initialized = false;
+    const bootstrap = (s: Session | null, ready = true) => {
       if (!mounted) return;
       setSession(s);
-      setLoading(false);
+      if (ready) setLoading(false);
       const userId = s?.user?.id ?? null;
       if (userId && userId !== lastEnsuredUserId.current) {
         lastEnsuredUserId.current = userId;
@@ -52,12 +53,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-      setTimeout(() => bootstrap(s), 0);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+      setTimeout(() => {
+        if (!initialized && event === "INITIAL_SESSION") return;
+        bootstrap(s);
+      }, 0);
     });
-    // Verify/refresh token in background without blocking render
+
     supabase.auth.getSession().then(({ data }) => {
+      initialized = true;
       bootstrap(data.session);
+    }).catch((error) => {
+      console.error("[auth] session bootstrap failed", error);
+      initialized = true;
+      bootstrap(null);
     });
     return () => { mounted = false; subscription.unsubscribe(); };
   }, [ensureWorkspace]);
