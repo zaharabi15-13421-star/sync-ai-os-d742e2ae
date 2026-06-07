@@ -20,12 +20,12 @@ export const upsertBrandDetails = createServerFn({ method: "POST" })
   .inputValidator((input: { patch: Partial<BrandDetails> }) => input)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const payload = { ...data.patch, user_id: userId };
+    const payload = { ...data.patch, user_id: userId } as never;
     const { data: row, error } = await supabase
       .from("brand_details")
       .upsert(payload, { onConflict: "user_id" })
       .select()
       .single();
     if (error) throw new Error(error.message);
-    return { success: true, data: row as BrandDetails };
+    return { success: true, data: row as unknown as BrandDetails };
   });
