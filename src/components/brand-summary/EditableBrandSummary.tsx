@@ -5,6 +5,7 @@ import {
   Link as LinkIcon, Globe, Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { useBrandSummary } from "@/hooks/useBrandSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
