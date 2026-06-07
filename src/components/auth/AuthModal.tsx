@@ -164,6 +164,18 @@ interface AuthModalProps {
 const DASHBOARD_PATH = "/dashboard/intelligence";
 const POST_AUTH_REDIRECT_KEY = "brandsync_post_auth_redirect";
 
+async function finishAuthenticatedRedirect() {
+  localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
+
+  for (let i = 0; i < 8; i += 1) {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) break;
+    await new Promise((resolve) => setTimeout(resolve, 125));
+  }
+
+  window.location.replace(DASHBOARD_PATH);
+}
+
 export function AuthModal({ open, onOpenChange, initialTab = "signup" }: AuthModalProps) {
   const [screen, setScreen] = useState<AuthScreen>(initialTab === "login" ? "login" : "entry");
   const [tab, setTab] = useState<AuthTab>(initialTab);
@@ -310,7 +322,6 @@ function EntryScreen({
   tab, setTab, onEmail, onGoogleDone,
 }: { tab: AuthTab; setTab: (t: AuthTab) => void; onEmail: () => void; onGoogleDone: () => void }) {
   const [googleLoading, setGoogleLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
@@ -328,10 +339,9 @@ function EntryScreen({
         return;
       }
       if (result.redirected) return;
-      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.success("Welcome to BrandSync AI!");
       onGoogleDone();
-      navigate({ to: DASHBOARD_PATH });
+      await finishAuthenticatedRedirect();
     } catch (e) {
       localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.error("Google sign-in failed", { description: e instanceof Error ? e.message : "Please try again." });
@@ -908,9 +918,8 @@ function LoginScreen({
         return;
       }
       if (result.redirected) return;
-      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       onGoogleDone();
-      navigate({ to: DASHBOARD_PATH });
+      await finishAuthenticatedRedirect();
     } catch (e) {
       localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.error("Google sign-in failed");
@@ -948,7 +957,7 @@ function LoginScreen({
       }).catch(() => {});
       toast.success("Welcome back!");
       onSuccess();
-      navigate({ to: DASHBOARD_PATH });
+      await finishAuthenticatedRedirect();
     } catch (err) {
       const res = await recordFailure({ data: { email: email.toLowerCase() } }).catch(() => null);
       setServerError("Incorrect email or password. Please try again.");
