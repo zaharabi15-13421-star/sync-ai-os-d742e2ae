@@ -1025,14 +1025,8 @@ function PredictiveAnalytics({ baseVisits, baseUnique, baseBounce, domain }: { b
             </div>
           </div>
 
-          {/* Risk alert */}
-          <div className="rounded-xl bg-amber-500/5 border border-amber-400/20 border-l-4 border-l-amber-400 p-3 flex items-start gap-3">
-            <AlertTriangle className="h-4 w-4 text-amber-300 mt-0.5 shrink-0" />
-            <div>
-              <div className="text-sm font-medium text-amber-200">Risk Alert</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Bounce rate may increase ~4.2% without UX improvements on mobile landing pages.</div>
-            </div>
-          </div>
+          {/* Risk Alert removed */}
+
 
           {/* AI recommendations */}
           <div>
