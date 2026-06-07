@@ -16,12 +16,13 @@ function DashboardLayout() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !session?.access_token) {
+    if (loading) return;
+    if (!session?.access_token) {
       void navigate({ to: "/", replace: true });
     }
   }, [loading, navigate, session?.access_token]);
 
-  if (loading || !session?.access_token) {
+  if (loading) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-background text-foreground">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -30,6 +31,11 @@ function DashboardLayout() {
         </div>
       </div>
     );
+  }
+
+  if (!session?.access_token) {
+    // Auth resolved with no session — render nothing while the redirect runs.
+    return null;
   }
 
   return (
