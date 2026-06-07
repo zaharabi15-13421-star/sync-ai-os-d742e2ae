@@ -197,24 +197,42 @@ function pickLogoFromHtml(html: string, baseUrl: string): string | null {
     const abs = (src: string) => {
       try { return new URL(src, base).toString(); } catch { return null; }
     };
-    // og:image
+    const isLikelyLogo = (s: string) => /logo|brand|wordmark|sitelogo|site-logo/i.test(s);
+
+    // 1) Prefer an <img> whose class/id/alt/src/data-* contains "logo" or
+    //    "brand". This is what the live website actually renders as its logo.
+    const imgTags = html.match(/<img\b[^>]*>/gi) ?? [];
+    let svgCandidate: string | null = null;
+    let firstCandidate: string | null = null;
+    for (const tag of imgTags) {
+      const srcMatch = tag.match(/\bsrc=["']([^"']+)["']/i);
+      if (!srcMatch) continue;
+      const src = srcMatch[1];
+      const haystack = tag + " " + src;
+      if (!isLikelyLogo(haystack)) continue;
+      const absUrl = abs(src);
+      if (!absUrl) continue;
+      if (/\.svg(\?|#|$)/i.test(absUrl) && !svgCandidate) svgCandidate = absUrl;
+      if (!firstCandidate) firstCandidate = absUrl;
+    }
+    if (svgCandidate) return svgCandidate;
+    if (firstCandidate) return firstCandidate;
+
+    // 2) First <img> inside <header> / <nav> — typically the site logo.
+    const headerBlock = html.match(/<header[^>]*>([\s\S]*?)<\/header>/i)?.[1]
+      ?? html.match(/<nav[^>]*>([\s\S]*?)<\/nav>/i)?.[1];
+    if (headerBlock) {
+      const img = headerBlock.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (img?.[1]) {
+        const absUrl = abs(img[1]);
+        if (absUrl) return absUrl;
+      }
+    }
+
+    // 3) og:image — only as a last resort. Favicons are intentionally skipped
+    //    because they are rarely the real brand logo.
     const og = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
     if (og?.[1]) return abs(og[1]);
-    // img with logo in src/alt
-    const logoImg = html.match(/<img[^>]+(?:src|alt)=["'][^"']*logo[^"']*["'][^>]*>/i);
-    if (logoImg) {
-      const src = logoImg[0].match(/src=["']([^"']+)["']/i);
-      if (src?.[1]) return abs(src[1]);
-    }
-    // first img inside header
-    const header = html.match(/<header[^>]*>([\s\S]*?)<\/header>/i);
-    if (header) {
-      const img = header[1].match(/<img[^>]+src=["']([^"']+)["']/i);
-      if (img?.[1]) return abs(img[1]);
-    }
-    // favicon
-    const icon = html.match(/<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+href=["']([^"']+)["']/i);
-    if (icon?.[1]) return abs(icon[1]);
   } catch {}
   return null;
 }
@@ -265,7 +283,15 @@ export const detectBrandAssets = createServerFn({ method: "POST" })
     };
 
     if (detect.has("logo")) {
-      result.logo_url = branding?.logo || branding?.images?.logo || pickLogoFromHtml(html, data.url);
+      // Prefer the real <img> logo extracted from the live page HTML, then
+      // Firecrawl's branding.logo / branding.images.logo. We deliberately
+      // avoid favicons so the displayed logo matches the website exactly.
+      const htmlLogo = html ? pickLogoFromHtml(html, data.url) : null;
+      const brandingLogo =
+        (typeof branding?.logo === "string" && branding.logo) ||
+        (typeof branding?.images?.logo === "string" && branding.images.logo) ||
+        null;
+      result.logo_url = htmlLogo || brandingLogo || null;
     }
     if (detect.has("tagline")) {
       result.tagline = pickTaglineFromHtml(html);
