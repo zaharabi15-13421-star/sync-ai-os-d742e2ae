@@ -103,6 +103,30 @@ function topKeywords(domain: string, key: string) {
   })).sort((a, b) => b.volume - a.volume);
 }
 
+// Map full country name → flag emoji using our COUNTRIES dataset, with fallback.
+const FLAG_BY_NAME: Record<string, string> = (() => {
+  const m: Record<string, string> = {};
+  for (const c of COUNTRIES) m[c.name.toLowerCase()] = c.flag;
+  // Common GA4 name variants
+  m["united states of america"] = m["united states"] ?? "🇺🇸";
+  m["russian federation"] = m["russia"] ?? "🇷🇺";
+  m["south korea"] = m["south korea"] ?? "🇰🇷";
+  m["korea, republic of"] = "🇰🇷";
+  m["viet nam"] = m["vietnam"] ?? "🇻🇳";
+  return m;
+})();
+function flagForCountryName(name: string): string {
+  return FLAG_BY_NAME[(name ?? "").toLowerCase()] ?? "🌍";
+}
+
+function buildMockPages(domain: string, key: string) {
+  const seed = seedHash(domain + key + "pages");
+  const paths = ["/", "/dashboard", "/dashboard/intelligence", "/dashboard/website-analysis", "/dashboard/brand-guideline", "/pricing", "/blog", "/about", "/contact", "/auth/callback", "/features", "/changelog"];
+  return paths
+    .map((p, i) => ({ page: p, views: Math.round(rand(seed + i, 40, 2400)) }))
+    .sort((a, b) => b.views - a.views);
+}
+
 export function TrafficAnalyzer({ domain = "example.com" }: { domain?: string }) {
   const today = new Date();
   const [mode, setMode] = useState<RangeMode>("month");
