@@ -5,7 +5,6 @@ import {
   Link as LinkIcon, Globe, Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
 import { useBrandSummary } from "@/hooks/useBrandSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -237,7 +236,6 @@ export function EditableBrandSummary({
   } | null;
 }) {
   const { query, update, enhance, detect } = useBrandSummary();
-  const qc = useQueryClient();
   const data = query.data?.data;
 
   // ---- AI Modal state ----
@@ -312,39 +310,17 @@ export function EditableBrandSummary({
         }))
       : [];
 
-    // Use the real logo from the firecrawl branding payload that came back with
-    // the analysis. Do NOT fall back to favicon — favicons are rarely the actual
-    // brand logo and cause the "wrong logo" issue on repeat searches. If no real
-    // logo is in the payload, leave it empty and let detectBrandAssets find it.
+    // Pull the logo straight from the firecrawl branding payload that already came
+    // back with the analysis so it renders instantly with the rest of the data.
     const instantLogo: string | null =
-      (typeof branding?.logo === "string" && branding.logo) ||
-      (typeof branding?.images?.logo === "string" && branding.images.logo) ||
+      branding?.logo ||
+      branding?.images?.logo ||
+      branding?.images?.favicon ||
       null;
 
-    // 1) IMMEDIATELY clear the cached row in React Query so the previous brand's
-    //    logo / fields cannot flash on screen while the upsert round-trips.
-    const cleared: BrandSummary = {
-      ...(data as BrandSummary),
-      website_url: incomingUrl,
-      brand_name: null,
-      page_title: initialFromAnalysis.title ?? null,
-      meta_description: initialFromAnalysis.description ?? null,
-      ai_summary: initialFromAnalysis.summary ?? null,
-      brand_colors: colors,
-      typography: fonts,
-      outbound_links: (initialFromAnalysis.links ?? []).slice(0, 100),
-      logo_url: instantLogo,
-      logo_user_uploaded: false,
-      logo_storage_path: null,
-      tagline: null,
-      brand_values: [],
-      brand_aesthetic: null,
-      brand_tone: null,
-      brand_archetype: null,
-    };
-    qc.setQueryData(["brand-summary"], { data: cleared });
-
-    // 2) Persist the reset to the database.
+    // When switching brands, wipe any stale fields the previous brand left behind
+    // (logo, tagline, brand_values, brand_aesthetic, tone, archetype) so they don't
+    // bleed through while the async detect.mutate is still running.
     update.mutate({
       website_url: incomingUrl,
       brand_name: null,
@@ -364,8 +340,8 @@ export function EditableBrandSummary({
       brand_archetype: null,
     });
 
-    // 3) Kick off AI detection for the richer fields and an exact-match logo.
-    //    detectBrandAssets only overwrites fields it actually finds.
+    // Kick off AI detection for the richer fields (tagline, values, aesthetic) and
+    // a higher-quality logo. detectBrandAssets only overwrites fields it actually finds.
     detect.mutate({
       url: incomingUrl,
       detect: ["logo", "tagline", "brand_values", "brand_aesthetic"],
