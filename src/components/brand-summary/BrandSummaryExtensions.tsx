@@ -431,7 +431,7 @@ function TaglineModal({
 }: {
   open: boolean; onClose: () => void; current: string; saving: boolean;
   save: (v: string | null) => Promise<unknown>;
-  enhance: (args: { data: any }) => Promise<{ value: string }>;
+  enhance: (args: { data: any }) => Promise<any>;
   ctx: Ctx;
 }) {
   const [v, setV] = useState(current);
@@ -472,7 +472,7 @@ function TagListModal({
 }: {
   open: boolean; onClose: () => void; title: string; subtitle: string; placeholder: string;
   current: string[]; saving: boolean; save: (v: string[]) => Promise<unknown>;
-  enhance: (args: { data: any }) => Promise<{ value: string[] }>;
+  enhance: (args: { data: any }) => Promise<any>;
   ctx: Ctx; field: "brand_values" | "brand_aesthetic"; max: number;
 }) {
   const [v, setV] = useState<string[]>(current);
@@ -507,7 +507,7 @@ function ToneModal({
 }: {
   open: boolean; onClose: () => void; current: string[]; saving: boolean;
   save: (v: string[]) => Promise<unknown>;
-  enhance: (args: { data: any }) => Promise<{ value: string[] }>;
+  enhance: (args: { data: any }) => Promise<any>;
   ctx: Ctx;
 }) {
   const [v, setV] = useState<string[]>(current);
@@ -572,7 +572,7 @@ function ArchetypeModal({
 }: {
   open: boolean; onClose: () => void; current: BrandArchetype; saving: boolean;
   save: (v: BrandArchetype) => Promise<unknown>;
-  enhance: (args: { data: any }) => Promise<{ value: { name: string; description: string } }>;
+  enhance: (args: { data: any }) => Promise<any>;
   ctx: Ctx;
 }) {
   const [sel, setSel] = useState<BrandArchetype>(current);
