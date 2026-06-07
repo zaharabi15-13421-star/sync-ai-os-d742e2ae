@@ -548,6 +548,90 @@ export type Database = {
           },
         ]
       }
+      brand_summary: {
+        Row: {
+          ai_enhancement_history: Json
+          ai_summary: string | null
+          brand_aesthetic: string | null
+          brand_archetype: string | null
+          brand_archetype_is_custom: boolean
+          brand_colors: Json
+          brand_name: string | null
+          brand_tone: string | null
+          brand_tone_is_custom: boolean
+          brand_values: string[]
+          created_at: string
+          id: string
+          last_ai_enhanced_at: string | null
+          last_scraped_at: string | null
+          logo_storage_path: string | null
+          logo_url: string | null
+          logo_user_uploaded: boolean
+          meta_description: string | null
+          outbound_links: Json
+          page_title: string | null
+          tagline: string | null
+          typography: Json
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          ai_enhancement_history?: Json
+          ai_summary?: string | null
+          brand_aesthetic?: string | null
+          brand_archetype?: string | null
+          brand_archetype_is_custom?: boolean
+          brand_colors?: Json
+          brand_name?: string | null
+          brand_tone?: string | null
+          brand_tone_is_custom?: boolean
+          brand_values?: string[]
+          created_at?: string
+          id?: string
+          last_ai_enhanced_at?: string | null
+          last_scraped_at?: string | null
+          logo_storage_path?: string | null
+          logo_url?: string | null
+          logo_user_uploaded?: boolean
+          meta_description?: string | null
+          outbound_links?: Json
+          page_title?: string | null
+          tagline?: string | null
+          typography?: Json
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          ai_enhancement_history?: Json
+          ai_summary?: string | null
+          brand_aesthetic?: string | null
+          brand_archetype?: string | null
+          brand_archetype_is_custom?: boolean
+          brand_colors?: Json
+          brand_name?: string | null
+          brand_tone?: string | null
+          brand_tone_is_custom?: boolean
+          brand_values?: string[]
+          created_at?: string
+          id?: string
+          last_ai_enhanced_at?: string | null
+          last_scraped_at?: string | null
+          logo_storage_path?: string | null
+          logo_url?: string | null
+          logo_user_uploaded?: boolean
+          meta_description?: string | null
+          outbound_links?: Json
+          page_title?: string | null
+          tagline?: string | null
+          typography?: Json
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       brand_summary_extras: {
         Row: {
           brand_aesthetic: string[]
