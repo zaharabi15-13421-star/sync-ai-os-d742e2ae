@@ -15,64 +15,57 @@ const Ctx = createContext<AuthCtx>({ session: null, user: null, loading: true, s
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const ensureWorkspace = useServerFn(ensureAuthWorkspace);
+  const ensureWorkspaceRef = useRef(ensureWorkspace);
+  ensureWorkspaceRef.current = ensureWorkspace;
   const lastEnsuredUserId = useRef<string | null>(null);
-  // Synchronously check localStorage for existing session to prevent blank flash
-  const [session, setSession] = useState<Session | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      // Supabase stores auth token in localStorage with 'auth-token' in key name
-      const keys = Object.keys(localStorage);
-      const authKey = keys.find(k => k.includes('auth-token') || k.includes('sb-'));
-      if (!authKey) return null;
 
-      const raw = localStorage.getItem(authKey);
-      if (!raw) return null;
-
-      const parsed = JSON.parse(raw);
-      // Return the session if available
-      return parsed?.session ?? null;
-    } catch {
-      return null;
-    }
-  });
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    let initialized = false;
-    const bootstrap = (s: Session | null, ready = true) => {
+
+    const applySession = (s: Session | null) => {
       if (!mounted) return;
       setSession(s);
-      if (ready) setLoading(false);
+      setLoading(false);
       const userId = s?.user?.id ?? null;
       if (userId && userId !== lastEnsuredUserId.current) {
         lastEnsuredUserId.current = userId;
-        void ensureWorkspace().catch((error) => {
+        void ensureWorkspaceRef.current().catch((error) => {
           console.error("[auth] workspace bootstrap failed", error);
         });
       }
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
-      setTimeout(() => {
-        if (!initialized && event === "INITIAL_SESSION") return;
-        bootstrap(s);
-      }, 0);
+    // Subscribe FIRST so we don't miss SIGNED_IN events.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      applySession(s);
     });
 
-    supabase.auth.getSession().then(({ data }) => {
-      initialized = true;
-      bootstrap(data.session);
-    }).catch((error) => {
-      console.error("[auth] session bootstrap failed", error);
-      initialized = true;
-      bootstrap(null);
-    });
-    return () => { mounted = false; subscription.unsubscribe(); };
-  }, [ensureWorkspace]);
+    // Then hydrate the current session.
+    supabase.auth.getSession()
+      .then(({ data }) => applySession(data.session))
+      .catch((error) => {
+        console.error("[auth] session bootstrap failed", error);
+        if (mounted) setLoading(false);
+      });
+
+    // Safety net: never let loading hang.
+    const failsafe = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 4000);
+
+    return () => {
+      mounted = false;
+      clearTimeout(failsafe);
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    lastEnsuredUserId.current = null;
   };
 
   return <Ctx.Provider value={{ session, user: session?.user ?? null, loading, signOut }}>{children}</Ctx.Provider>;

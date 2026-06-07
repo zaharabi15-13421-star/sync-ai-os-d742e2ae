@@ -165,19 +165,13 @@ const DASHBOARD_PATH = "/dashboard/intelligence";
 const POST_AUTH_REDIRECT_KEY = "brandsync_post_auth_redirect";
 
 async function finishAuthenticatedRedirect() {
-  localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
-
-  for (let i = 0; i < 8; i += 1) {
-    const { data } = await supabase.auth.getSession();
-    if (data.session?.access_token) {
-      window.location.replace(DASHBOARD_PATH);
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 125));
-  }
-
-  localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
-  toast.error("Sign-in was not completed. Please try again.");
+  // Best-effort: prefer an existing session immediately; otherwise just go.
+  // The destination route's auth guard will pick up the session as soon as
+  // the supabase client surfaces it.
+  try {
+    localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
+  } catch { /* noop */ }
+  window.location.assign(DASHBOARD_PATH);
 }
 
 export function AuthModal({ open, onOpenChange, initialTab = "signup" }: AuthModalProps) {
