@@ -276,15 +276,27 @@ export function EditableBrandSummary({
   };
   const stopEdit = () => setEditingField(null);
 
-  // ---- Seed from analysis if empty ----
-  const seededRef = useRef(false);
+  // ---- Seed / reset whenever the analyzed URL changes ----
+  // Guarantees a freshly analyzed brand fully replaces the previous brand's
+  // data (logo, tagline, values, aesthetic, colors, copy, links) instead of
+  // leaving stale fields from the prior analysis on screen.
+  const lastSeededUrlRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!data || seededRef.current || !initialFromAnalysis) return;
-    const isEmpty =
-      !data.brand_name && !data.ai_summary && (!data.brand_colors || data.brand_colors.length === 0) &&
+    if (!data || !initialFromAnalysis?.url) return;
+    const incomingUrl = initialFromAnalysis.url;
+    if (lastSeededUrlRef.current === incomingUrl) return;
+
+    const rowIsEmpty =
+      !data.brand_name && !data.ai_summary && !data.logo_url &&
+      (!data.brand_colors || data.brand_colors.length === 0) &&
       (!data.typography || data.typography.length === 0);
-    if (!isEmpty) { seededRef.current = true; return; }
-    seededRef.current = true;
+    const isDifferentBrand = (data.website_url ?? null) !== incomingUrl;
+    if (!rowIsEmpty && !isDifferentBrand) {
+      lastSeededUrlRef.current = incomingUrl;
+      return;
+    }
+    lastSeededUrlRef.current = incomingUrl;
+
     const branding = initialFromAnalysis.branding ?? {};
     const colors: BrandColor[] = branding?.colors
       ? Object.entries(branding.colors)
@@ -297,22 +309,45 @@ export function EditableBrandSummary({
           usage: i === 0 ? "Used for headings" : i === 1 ? "Used for body text" : "Used for UI elements",
         }))
       : [];
+
+    // Pull the logo straight from the firecrawl branding payload that already came
+    // back with the analysis so it renders instantly with the rest of the data.
+    const instantLogo: string | null =
+      branding?.logo ||
+      branding?.images?.logo ||
+      branding?.images?.favicon ||
+      null;
+
+    // When switching brands, wipe any stale fields the previous brand left behind
+    // (logo, tagline, brand_values, brand_aesthetic, tone, archetype) so they don't
+    // bleed through while the async detect.mutate is still running.
     update.mutate({
-      website_url: initialFromAnalysis.url ?? null,
+      website_url: incomingUrl,
+      brand_name: null,
       page_title: initialFromAnalysis.title ?? null,
       meta_description: initialFromAnalysis.description ?? null,
       ai_summary: initialFromAnalysis.summary ?? null,
       brand_colors: colors,
       typography: fonts,
       outbound_links: (initialFromAnalysis.links ?? []).slice(0, 100),
+      logo_url: instantLogo,
+      logo_user_uploaded: false,
+      logo_storage_path: null,
+      tagline: null,
+      brand_values: [],
+      brand_aesthetic: null,
+      brand_tone: null,
+      brand_archetype: null,
     });
 
-    // Kick off auto-detection of new fields
-    if (initialFromAnalysis.url) {
-      detect.mutate({ url: initialFromAnalysis.url, detect: ["logo", "tagline", "brand_values", "brand_aesthetic"] });
-    }
+    // Kick off AI detection for the richer fields (tagline, values, aesthetic) and
+    // a higher-quality logo. detectBrandAssets only overwrites fields it actually finds.
+    detect.mutate({
+      url: incomingUrl,
+      detect: ["logo", "tagline", "brand_values", "brand_aesthetic"],
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, initialFromAnalysis]);
+  }, [data?.website_url, initialFromAnalysis?.url]);
 
   if (query.isLoading) {
     return <div className="h-32 rounded-xl bg-white/[0.04] animate-pulse" />;
