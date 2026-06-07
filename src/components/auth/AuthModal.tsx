@@ -644,7 +644,11 @@ function VerifyScreen({
     if (seconds > 0 || resending) return;
     setResending(true);
     try {
-      const { error: e } = await supabase.auth.resend({ type: "signup", email });
+      const { error: e } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      });
       if (e) throw e;
       toast.success(`Verification email resent to ${email}`);
       setSeconds(45);
@@ -892,19 +896,23 @@ function LoginScreen({
     setGoogleLoading(true);
     logAuthEventFn({ data: { eventType: "login_attempted", metadata: { method: "google" } } }).catch(() => {});
     try {
+      localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/auth/callback`,
+        redirect_uri: window.location.origin,
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
+        localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
         toast.error("Google sign-in failed", { description: result.error.message });
         setGoogleLoading(false);
         return;
       }
       if (result.redirected) return;
+      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       onGoogleDone();
       navigate({ to: DASHBOARD_PATH });
     } catch (e) {
+      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.error("Google sign-in failed");
       setGoogleLoading(false);
     }
