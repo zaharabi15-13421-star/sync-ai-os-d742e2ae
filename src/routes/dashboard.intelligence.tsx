@@ -56,8 +56,7 @@ function Intelligence() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
         <BrandHealthScoreCard score={92} delta="+4 vs last mo" />
-        <StatCard label="Traffic Momentum" value="96%" delta="+2%" accent="indigo" />
-        <StatCard label="Stickiness Rate" value="+0.71" delta="+0.08" accent="purple" />
+        <StatCard label="Traffic Report" value="96%" delta="+2%" accent="indigo" />
       </div>
 
       <Tabs defaultValue="traffic" className="w-full">
