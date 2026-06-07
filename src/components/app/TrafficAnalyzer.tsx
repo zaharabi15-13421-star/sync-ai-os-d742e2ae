@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
-import { Calendar as CalendarIcon, Globe2, MousePointerClick, Users, Clock, TrendingUp, Search, Share2, Mail, Megaphone, ArrowUpRight, RefreshCw, MapPin, Sparkles, X, Link2, AlertTriangle, Wand2, CheckCircle2, Link as LinkIcon, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, Globe2, MousePointerClick, Users, Clock, TrendingUp, Search, Share2, Mail, Megaphone, ArrowUpRight, RefreshCw, MapPin, Sparkles, X, Link2, AlertTriangle, Wand2, CheckCircle2, Link as LinkIcon, Plus, List as ListIcon } from "lucide-react";
+import { COUNTRIES } from "@/data/countries";
 import { GlassCard, Pill, StatCard } from "@/components/app/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +103,30 @@ function topKeywords(domain: string, key: string) {
   })).sort((a, b) => b.volume - a.volume);
 }
 
+// Map full country name → flag emoji using our COUNTRIES dataset, with fallback.
+const FLAG_BY_NAME: Record<string, string> = (() => {
+  const m: Record<string, string> = {};
+  for (const c of COUNTRIES) m[c.name.toLowerCase()] = c.flag;
+  // Common GA4 name variants
+  m["united states of america"] = m["united states"] ?? "🇺🇸";
+  m["russian federation"] = m["russia"] ?? "🇷🇺";
+  m["south korea"] = m["south korea"] ?? "🇰🇷";
+  m["korea, republic of"] = "🇰🇷";
+  m["viet nam"] = m["vietnam"] ?? "🇻🇳";
+  return m;
+})();
+function flagForCountryName(name: string): string {
+  return FLAG_BY_NAME[(name ?? "").toLowerCase()] ?? "🌍";
+}
+
+function buildMockPages(domain: string, key: string) {
+  const seed = seedHash(domain + key + "pages");
+  const paths = ["/", "/dashboard", "/dashboard/intelligence", "/dashboard/website-analysis", "/dashboard/brand-guideline", "/pricing", "/blog", "/about", "/contact", "/auth/callback", "/features", "/changelog"];
+  return paths
+    .map((p, i) => ({ page: p, views: Math.round(rand(seed + i, 40, 2400)) }))
+    .sort((a, b) => b.views - a.views);
+}
+
 export function TrafficAnalyzer({ domain = "example.com" }: { domain?: string }) {
   const today = new Date();
   const [mode, setMode] = useState<RangeMode>("month");
@@ -167,6 +192,32 @@ export function TrafficAnalyzer({ domain = "example.com" }: { domain?: string })
   const split = useMemo(() => trafficSplit(cleanDomain, cacheKey), [cleanDomain, cacheKey]);
   const geo = useMemo(() => topCountries(cleanDomain, cacheKey), [cleanDomain, cacheKey]);
   const kws = useMemo(() => topKeywords(cleanDomain, cacheKey), [cleanDomain, cacheKey]);
+
+  const pagesData = useMemo(() => {
+    const snap: any = ga4Live ? (ga4Analytics.data as any)?.snapshot : null;
+    if (snap?.top_pages?.length) {
+      return (snap.top_pages as any[])
+        .map((p) => ({ page: String(p.page ?? ""), views: Number(p.views) || 0 }))
+        .filter((p) => p.page)
+        .sort((a, b) => b.views - a.views);
+    }
+    return buildMockPages(cleanDomain, cacheKey);
+  }, [cleanDomain, cacheKey, ga4Live, ga4Analytics.data]);
+
+  const countriesData = useMemo(() => {
+    const snap: any = ga4Live ? (ga4Analytics.data as any)?.snapshot : null;
+    if (snap?.countries?.length) {
+      return (snap.countries as any[])
+        .map((c) => ({ country: String(c.country ?? ""), sessions: Number(c.sessions) || 0 }))
+        .filter((c) => c.country)
+        .sort((a, b) => b.sessions - a.sessions);
+    }
+    // Fallback: derive a session-like count from the mock share values so the
+    // table still has meaningful numbers when GA4 isn't live.
+    return geo
+      .map((g) => ({ country: g.country, sessions: Math.max(1, Math.round(g.share * 120)) }))
+      .sort((a, b) => b.sessions - a.sessions);
+  }, [geo, cleanDomain, cacheKey, ga4Live, ga4Analytics.data]);
 
   const totals = useMemo(() => {
     // Prefer real GA4 totals when connected & analytics snapshot is available.
@@ -450,19 +501,11 @@ export function TrafficAnalyzer({ domain = "example.com" }: { domain?: string })
         </GlassCard>
       </div>
 
+      <PageVisitorsCard rows={pagesData} />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <GlassCard>
-          <div className="text-sm font-medium mb-3 flex items-center gap-2"><MapPin className="h-4 w-4 text-emerald-300" /> Top Countries</div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={geo} layout="vertical" margin={{ left: 20 }}>
-              <CartesianGrid stroke="oklch(1 0 0 / 0.06)" horizontal={false} />
-              <XAxis type="number" stroke="oklch(0.7 0.02 260)" tick={{ fontSize: 11 }} unit="%" />
-              <YAxis dataKey="country" type="category" stroke="oklch(0.7 0.02 260)" tick={{ fontSize: 11 }} width={100} />
-              <Tooltip contentStyle={{ background: "oklch(0.18 0.02 260)", border: "1px solid oklch(1 0 0 / 0.1)", borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="share" fill="oklch(0.65 0.22 280)" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </GlassCard>
+        <CountryVisitorsCard rows={countriesData} />
+
 
         <GlassCard>
           <div className="flex items-center justify-between mb-3">
@@ -1025,14 +1068,8 @@ function PredictiveAnalytics({ baseVisits, baseUnique, baseBounce, domain }: { b
             </div>
           </div>
 
-          {/* Risk alert */}
-          <div className="rounded-xl bg-amber-500/5 border border-amber-400/20 border-l-4 border-l-amber-400 p-3 flex items-start gap-3">
-            <AlertTriangle className="h-4 w-4 text-amber-300 mt-0.5 shrink-0" />
-            <div>
-              <div className="text-sm font-medium text-amber-200">Risk Alert</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Bounce rate may increase ~4.2% without UX improvements on mobile landing pages.</div>
-            </div>
-          </div>
+          {/* Risk Alert removed */}
+
 
           {/* AI recommendations */}
           <div>
@@ -1317,5 +1354,104 @@ function NoMatchBanner({
         </div>
       </div>
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Page Visitors — GA4 pagePath × screenPageViews table
+// ─────────────────────────────────────────────────────────────
+function PageVisitorsCard({ rows }: { rows: { page: string; views: number }[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? rows : rows.slice(0, 10);
+  return (
+    <GlassCard>
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-sm font-medium flex items-center gap-2"><ListIcon className="h-4 w-4 text-indigo-300" /> Page Visitors</div>
+        <Pill tone="emerald">GA4</Pill>
+      </div>
+      {rows.length === 0 ? (
+        <div className="py-6 text-center text-[13px] text-muted-foreground">No page data available for the selected period</div>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between border-b border-white/10 py-2 text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
+            <span>Page</span><span>Visitors</span>
+          </div>
+          {visible.map((r, i) => (
+            <div
+              key={r.page + i}
+              className={cn(
+                "flex items-center justify-between py-3 transition hover:bg-white/[0.03] -mx-2 px-2 rounded",
+                i < visible.length - 1 && "border-b border-white/10"
+              )}
+            >
+              <span
+                className="font-mono text-sm text-foreground/90 truncate"
+                style={{ maxWidth: "70%" }}
+                title={r.page}
+              >
+                {r.page}
+              </span>
+              <span className="text-sm font-semibold tabular-nums min-w-[60px] text-right">{r.views.toLocaleString()}</span>
+            </div>
+          ))}
+          {rows.length > 10 && (
+            <button
+              onClick={() => setExpanded((e) => !e)}
+              className="mt-3 text-xs text-purple-300 hover:text-purple-200 cursor-pointer"
+            >
+              {expanded ? "Show less ↑" : `View all ${rows.length} pages →`}
+            </button>
+          )}
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Country Visitors — GA4 country × sessions table with flag emojis
+// ─────────────────────────────────────────────────────────────
+function CountryVisitorsCard({ rows }: { rows: { country: string; sessions: number }[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? rows : rows.slice(0, 10);
+  return (
+    <GlassCard>
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-sm font-medium flex items-center gap-2"><MapPin className="h-4 w-4 text-emerald-300" /> Country Visitors</div>
+        <Pill tone="emerald">GA4</Pill>
+      </div>
+      {rows.length === 0 ? (
+        <div className="py-6 text-center text-[13px] text-muted-foreground">No country data available for the selected period</div>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between border-b border-white/10 py-2 text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
+            <span>Country</span><span>Visitors</span>
+          </div>
+          {visible.map((r, i) => (
+            <div
+              key={r.country + i}
+              className={cn(
+                "flex items-center justify-between py-3 transition hover:bg-white/[0.03] -mx-2 px-2 rounded",
+                i < visible.length - 1 && "border-b border-white/10"
+              )}
+            >
+              <span className="flex items-center gap-2.5 min-w-0">
+                <span className="text-lg leading-none flex-none" aria-hidden>{flagForCountryName(r.country)}</span>
+                <span className="text-sm text-foreground/90 truncate">{r.country}</span>
+              </span>
+              <span className="text-sm font-semibold tabular-nums min-w-[60px] text-right">{r.sessions.toLocaleString()}</span>
+            </div>
+          ))}
+          {rows.length > 10 && (
+            <button
+              onClick={() => setExpanded((e) => !e)}
+              className="mt-3 text-xs text-purple-300 hover:text-purple-200 cursor-pointer"
+            >
+              {expanded ? "Show less ↑" : `View all ${rows.length} countries →`}
+            </button>
+          )}
+        </div>
+      )}
+    </GlassCard>
   );
 }

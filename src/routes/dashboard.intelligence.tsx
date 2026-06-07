@@ -63,13 +63,7 @@ function Intelligence() {
       <Tabs defaultValue="traffic" className="w-full">
         <TabsList className="bg-white/5 border border-white/10 flex-wrap h-auto">
           <TabsTrigger value="traffic"><BarChart3 className="h-3.5 w-3.5 mr-1.5" /> Traffic Analyzer</TabsTrigger>
-          <TabsTrigger value="competitors"><Swords className="h-3.5 w-3.5 mr-1.5" /> Competitors</TabsTrigger>
-          <TabsTrigger value="predictions"><Brain className="h-3.5 w-3.5 mr-1.5" /> AI Predictions</TabsTrigger>
-          <TabsTrigger value="audience"><Heart className="h-3.5 w-3.5 mr-1.5" /> Audience DNA</TabsTrigger>
           <TabsTrigger value="keywords"><Target className="h-3.5 w-3.5 mr-1.5" /> Keyword Intelligence</TabsTrigger>
-          <TabsTrigger value="revenue"><TrendingUp className="h-3.5 w-3.5 mr-1.5" /> Revenue Attribution</TabsTrigger>
-          <TabsTrigger value="behavior"><Activity className="h-3.5 w-3.5 mr-1.5" /> Behavioral Analytics</TabsTrigger>
-          <TabsTrigger value="crisis"><AlertTriangle className="h-3.5 w-3.5 mr-1.5" /> Crisis Radar</TabsTrigger>
         </TabsList>
 
         <USPStrip />
@@ -78,16 +72,7 @@ function Intelligence() {
           <TrafficAnalyzer domain={brand.website} />
         </TabsContent>
 
-        <TabsContent value="competitors" className="mt-5">
-          <CompetitorsTab brandName={brand.name} />
-        </TabsContent>
-
-        <TabsContent value="predictions" className="mt-5"><AIPredictionsTab /></TabsContent>
-        <TabsContent value="audience" className="mt-5"><AudienceDNATab /></TabsContent>
         <TabsContent value="keywords" className="mt-5"><KeywordIntelligenceTab /></TabsContent>
-        <TabsContent value="revenue" className="mt-5"><RevenueAttributionTab /></TabsContent>
-        <TabsContent value="behavior" className="mt-5"><BehavioralAnalyticsTab /></TabsContent>
-        <TabsContent value="crisis" className="mt-5"><CrisisRadarTab /></TabsContent>
       </Tabs>
     </div>
   );
@@ -601,7 +586,6 @@ function USPStrip() {
     { icon: Globe2, label: "Global + BD Market Data", tone: "text-emerald-300" },
     { icon: Activity, label: "Real-time Refresh", tone: "text-indigo-300" },
     { icon: Gauge, label: "Brand Health Score", tone: "text-purple-300" },
-    { icon: Swords, label: "Competitor Intelligence", tone: "text-rose-300" },
   ];
   return (
     <div className="mt-4 -mx-1 overflow-x-auto scrollbar-hide">
