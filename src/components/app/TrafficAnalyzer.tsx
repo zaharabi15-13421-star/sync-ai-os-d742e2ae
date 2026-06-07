@@ -193,6 +193,32 @@ export function TrafficAnalyzer({ domain = "example.com" }: { domain?: string })
   const geo = useMemo(() => topCountries(cleanDomain, cacheKey), [cleanDomain, cacheKey]);
   const kws = useMemo(() => topKeywords(cleanDomain, cacheKey), [cleanDomain, cacheKey]);
 
+  const pagesData = useMemo(() => {
+    const snap: any = ga4Live ? (ga4Analytics.data as any)?.snapshot : null;
+    if (snap?.top_pages?.length) {
+      return (snap.top_pages as any[])
+        .map((p) => ({ page: String(p.page ?? ""), views: Number(p.views) || 0 }))
+        .filter((p) => p.page)
+        .sort((a, b) => b.views - a.views);
+    }
+    return buildMockPages(cleanDomain, cacheKey);
+  }, [cleanDomain, cacheKey, ga4Live, ga4Analytics.data]);
+
+  const countriesData = useMemo(() => {
+    const snap: any = ga4Live ? (ga4Analytics.data as any)?.snapshot : null;
+    if (snap?.countries?.length) {
+      return (snap.countries as any[])
+        .map((c) => ({ country: String(c.country ?? ""), sessions: Number(c.sessions) || 0 }))
+        .filter((c) => c.country)
+        .sort((a, b) => b.sessions - a.sessions);
+    }
+    // Fallback: derive a session-like count from the mock share values so the
+    // table still has meaningful numbers when GA4 isn't live.
+    return geo
+      .map((g) => ({ country: g.country, sessions: Math.max(1, Math.round(g.share * 120)) }))
+      .sort((a, b) => b.sessions - a.sessions);
+  }, [geo, cleanDomain, cacheKey, ga4Live, ga4Analytics.data]);
+
   const totals = useMemo(() => {
     // Prefer real GA4 totals when connected & analytics snapshot is available.
     const snap: any = ga4Live ? (ga4Analytics.data as any)?.snapshot : null;
