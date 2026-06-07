@@ -127,11 +127,11 @@ ${ctxBlock}`,
     }
 
     // Tag-list fields
+    const TONE_ENUM = ["Professional","Friendly","Bold & Edgy","Playful","Inspirational","Luxury","Technical","Empathetic","Authoritative","Witty","Warm","Confident"] as const;
     const schema =
       data.field === "brand_tone"
         ? z.object({
-            tags: z.array(z.enum([...TONE_OPTIONS, "Authoritative", "Witty", "Warm", "Confident"] as [string, ...string[]]))
-              .min(1).max(4),
+            tags: z.array(z.enum(TONE_ENUM)).min(1).max(4),
           })
         : z.object({ tags: z.array(z.string().min(2).max(40)).min(3).max(6) });
 
