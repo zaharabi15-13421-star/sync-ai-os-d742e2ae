@@ -171,8 +171,7 @@ export const finalizeGeneration = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
-    return { generation: row };
-  });
+    return { fileUrl, storagePath: data.storagePath ?? null, sectionsCount: row?.sections_count ?? 11 };
 
 /* Mark error */
 export const errorGeneration = createServerFn({ method: "POST" })
