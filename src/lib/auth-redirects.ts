@@ -1,6 +1,7 @@
 export const DASHBOARD_PATH = "/dashboard/intelligence";
 export const AUTH_CALLBACK_PATH = "/auth/callback";
 export const POST_AUTH_REDIRECT_KEY = "brandsync_post_auth_redirect";
+const POST_AUTH_REDIRECT_TTL_MS = 10 * 60 * 1000;
 
 export function getAuthCallbackUrl() {
   if (typeof window === "undefined") return AUTH_CALLBACK_PATH;
@@ -8,21 +9,33 @@ export function getAuthCallbackUrl() {
 }
 
 export function getOAuthRedirectUrl() {
-  if (typeof window === "undefined") return "/";
-  return window.location.origin;
+  return getAuthCallbackUrl();
 }
 
 export function rememberPostAuthRedirect(path = DASHBOARD_PATH) {
   try {
-    localStorage.setItem(POST_AUTH_REDIRECT_KEY, safeRedirectPath(path));
+    localStorage.setItem(
+      POST_AUTH_REDIRECT_KEY,
+      JSON.stringify({ path: safeRedirectPath(path), ts: Date.now() }),
+    );
   } catch { /* noop */ }
 }
 
 export function consumePostAuthRedirect(fallback = DASHBOARD_PATH) {
   try {
-    const redirectPath = localStorage.getItem(POST_AUTH_REDIRECT_KEY) ?? fallback;
+    const raw = localStorage.getItem(POST_AUTH_REDIRECT_KEY);
     localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
-    return safeRedirectPath(redirectPath, fallback);
+    if (!raw) return fallback;
+
+    try {
+      const parsed = JSON.parse(raw) as { path?: string; ts?: number };
+      if (!parsed.path || !parsed.ts || Date.now() - parsed.ts > POST_AUTH_REDIRECT_TTL_MS) {
+        return fallback;
+      }
+      return safeRedirectPath(parsed.path, fallback);
+    } catch {
+      return safeRedirectPath(raw, fallback);
+    }
   } catch {
     return fallback;
   }
