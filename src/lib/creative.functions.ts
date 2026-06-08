@@ -501,6 +501,7 @@ Return realistic data a content team would trust. Return ONLY valid JSON.`,
         seed_keyword: seed,
         language: language.slice(0, 12),
         suggestions: result.object.keywords,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       });
     } catch { /* ignore */ }
 

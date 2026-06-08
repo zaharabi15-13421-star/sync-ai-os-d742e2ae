@@ -12,15 +12,15 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function DashboardLayout() {
-  const { session, user, loading } = useAuth();
+  const { session, user, loading, workspaceReady } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (loading) return;
-    if (!user || !session?.access_token) {
+    if (!user || !session?.access_token || !workspaceReady) {
       void navigate({ to: "/", replace: true });
     }
-  }, [loading, navigate, session?.access_token, user]);
+  }, [loading, navigate, session?.access_token, user, workspaceReady]);
 
   if (loading) {
     return (
@@ -33,7 +33,7 @@ function DashboardLayout() {
     );
   }
 
-  if (!user || !session?.access_token) {
+  if (!user || !session?.access_token || !workspaceReady) {
     // Auth resolved with no session — render nothing while the redirect runs.
     return null;
   }

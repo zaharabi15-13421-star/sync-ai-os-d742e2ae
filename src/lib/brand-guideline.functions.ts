@@ -181,7 +181,7 @@ export const generateBrandGuideline = createServerFn({ method: "POST" })
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: buildUserPrompt(data.brief as Record<string, unknown>) },

@@ -83,7 +83,6 @@ export function RegisterDemoModal({ open, onOpenChange }: { open: boolean; onOpe
       if (result.redirected) return; // browser will navigate
       // Tokens received — session is set
       toast.success("Welcome to BrandSync AI!");
-      await finishAuthenticatedRedirect();
     } catch (e) {
       clearPostAuthRedirect();
       toast.error("Google sign-in failed", {
