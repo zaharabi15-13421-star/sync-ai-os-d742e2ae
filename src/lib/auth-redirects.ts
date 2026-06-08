@@ -7,6 +7,11 @@ export function getAuthCallbackUrl() {
   return `${window.location.origin}${AUTH_CALLBACK_PATH}`;
 }
 
+export function getOAuthRedirectUrl() {
+  if (typeof window === "undefined") return "/";
+  return window.location.origin;
+}
+
 export function rememberPostAuthRedirect(path = DASHBOARD_PATH) {
   try {
     localStorage.setItem(POST_AUTH_REDIRECT_KEY, safeRedirectPath(path));

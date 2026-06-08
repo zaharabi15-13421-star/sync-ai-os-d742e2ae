@@ -8,7 +8,7 @@ import { X, Sparkles, Mail, CheckCircle2, KeyRound, LockOpen, AlertCircle, Alert
 import { useEmailVerificationDetection } from "@/hooks/useEmailVerificationDetection";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { clearPostAuthRedirect, DASHBOARD_PATH, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
+import { clearPostAuthRedirect, DASHBOARD_PATH, getAuthCallbackUrl, getOAuthRedirectUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
 import { redirectToAuthenticatedDestination } from "@/lib/auth-session";
 import {
   Label, FieldError, TextField, SelectField, PasswordField, PasswordRequirements,
@@ -325,7 +325,7 @@ function EntryScreen({
       rememberPostAuthRedirect();
       logAuthEventFn({ data: { eventType: "signup_method_selected", metadata: { method: "google" } } }).catch(() => {});
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: getAuthCallbackUrl(),
+        redirect_uri: getOAuthRedirectUrl(),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
@@ -902,7 +902,7 @@ function LoginScreen({
     try {
       rememberPostAuthRedirect();
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: getAuthCallbackUrl(),
+        redirect_uri: getOAuthRedirectUrl(),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
