@@ -8,6 +8,7 @@ import { X, Sparkles, Mail, CheckCircle2, KeyRound, LockOpen, AlertCircle, Alert
 import { useEmailVerificationDetection } from "@/hooks/useEmailVerificationDetection";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { clearPostAuthRedirect, DASHBOARD_PATH, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
 import {
   Label, FieldError, TextField, SelectField, PasswordField, PasswordRequirements,
   OTPInput, GoogleOAuthButton, AuthDivider, PrimaryButton, GhostButton,
@@ -161,16 +162,11 @@ interface AuthModalProps {
   initialTab?: AuthTab;
 }
 
-const DASHBOARD_PATH = "/dashboard/intelligence";
-const POST_AUTH_REDIRECT_KEY = "brandsync_post_auth_redirect";
-
 async function finishAuthenticatedRedirect() {
   // Best-effort: prefer an existing session immediately; otherwise just go.
   // The destination route's auth guard will pick up the session as soon as
   // the supabase client surfaces it.
-  try {
-    localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
-  } catch { /* noop */ }
+  rememberPostAuthRedirect();
   window.location.assign(DASHBOARD_PATH);
 }
 
@@ -324,14 +320,14 @@ function EntryScreen({
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
-      localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
+      rememberPostAuthRedirect();
       logAuthEventFn({ data: { eventType: "signup_method_selected", metadata: { method: "google" } } }).catch(() => {});
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: getAuthCallbackUrl(),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
-        localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+        clearPostAuthRedirect();
         toast.error("Google sign-in failed", { description: result.error.message });
         setGoogleLoading(false);
         return;
@@ -341,7 +337,7 @@ function EntryScreen({
       onGoogleDone();
       await finishAuthenticatedRedirect();
     } catch (e) {
-      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+      clearPostAuthRedirect();
       toast.error("Google sign-in failed", { description: e instanceof Error ? e.message : "Please try again." });
       setGoogleLoading(false);
     }
@@ -468,7 +464,7 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
         email: normalizedEmail,
         options: {
           shouldCreateUser: false,
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: getAuthCallbackUrl(),
         },
       });
       if (otpErr) console.warn("OTP send error", otpErr);
@@ -655,7 +651,7 @@ function VerifyScreen({
       const { error: e } = await supabase.auth.resend({
         type: "signup",
         email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: getAuthCallbackUrl() },
       });
       if (e) throw e;
       toast.success(`Verification email resent to ${email}`);
@@ -902,13 +898,13 @@ function LoginScreen({
     setGoogleLoading(true);
     logAuthEventFn({ data: { eventType: "login_attempted", metadata: { method: "google" } } }).catch(() => {});
     try {
-      localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
+      rememberPostAuthRedirect();
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: getAuthCallbackUrl(),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
-        localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+        clearPostAuthRedirect();
         toast.error("Google sign-in failed", { description: result.error.message });
         setGoogleLoading(false);
         return;
@@ -917,7 +913,7 @@ function LoginScreen({
       onGoogleDone();
       await finishAuthenticatedRedirect();
     } catch (e) {
-      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+      clearPostAuthRedirect();
       toast.error("Google sign-in failed");
       setGoogleLoading(false);
     }

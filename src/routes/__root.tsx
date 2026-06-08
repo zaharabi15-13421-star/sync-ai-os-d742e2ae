@@ -13,8 +13,7 @@ import appCss from "../styles.css?url";
 import { ThemeProvider } from "@/components/app/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
-
-const POST_AUTH_REDIRECT_KEY = "brandsync_post_auth_redirect";
+import { consumePostAuthRedirect, POST_AUTH_REDIRECT_KEY } from "@/lib/auth-redirects";
 
 function NotFoundComponent() {
   return (
@@ -147,9 +146,9 @@ function AuthRedirector({ queryClient }: { queryClient: QueryClient }) {
     const redirectPath = localStorage.getItem(POST_AUTH_REDIRECT_KEY);
     if (!redirectPath) return;
 
-    localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
-    if (window.location.pathname !== redirectPath) {
-      window.location.assign(redirectPath);
+    const targetPath = consumePostAuthRedirect();
+    if (window.location.pathname !== targetPath) {
+      window.location.assign(targetPath);
     }
   }, [queryClient, router, user]);
 

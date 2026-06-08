@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { DASHBOARD_PATH } from "@/lib/auth-redirects";
 
 export const AUTH_BROADCAST_CHANNEL = "brandsync-auth-channel";
-const DASHBOARD_PATH = "/dashboard/intelligence";
 const POLL_INTERVAL_MS = 5000;
 const POLL_MAX_MS = 10 * 60 * 1000;
 
