@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AUTH_BROADCAST_CHANNEL } from "@/hooks/useEmailVerificationDetection";
-import { DASHBOARD_PATH, consumePostAuthRedirect } from "@/lib/auth-redirects";
+import { consumePostAuthRedirect } from "@/lib/auth-redirects";
 import { finalizeAuthSessionFromUrl } from "@/lib/auth-session";
 
 const AUTO_REDIRECT_MS = 2500;
@@ -104,7 +104,7 @@ function AuthCallback() {
 
   const cancelTimerAndGo = () => {
     if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
-    window.location.href = DASHBOARD_PATH;
+    window.location.replace(consumePostAuthRedirect());
   };
 
   return (
