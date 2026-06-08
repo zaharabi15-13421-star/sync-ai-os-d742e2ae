@@ -113,20 +113,27 @@ function TextOutput({ title, body }: { title: string; body: string }) {
 }
 
 // =================== 1.1 IMAGE LAB ===================
+const IMAGE_LAB_STYLES = ["None", "Editorial", "Cinematic", "Studio", "Lifestyle", "Bold Pop", "Soft Pastel", "Vintage Film"] as const;
 export function ImageLab() {
   const g = useGenerator();
   const [prompt, setPrompt] = useState("Hyper-real product flatlay, soft daylight, brand-aligned palette");
   const [tone, setTone] = useState("Premium");
   const [platforms, setPlatforms] = useState<string[]>(["Instagram"]);
   const [ratio, setRatio] = useState("1:1");
-  const [style, setStyle] = useState("Editorial");
+  const [style, setStyle] = useState<string>("None");
   const [atts, setAtts] = useState<PromptAttachment[]>([]);
-  const runGen = () => g.run("image-lab", { prompt, tone, style, aspectRatio: ratio, extras: { platforms }, attachments: atts });
+  const runGen = () => g.run("image-lab", {
+    prompt, tone,
+    style: style === "None" ? undefined : style,
+    aspectRatio: ratio, extras: { platforms }, attachments: atts,
+  });
   return (
     <FeatureShell title="Image Lab" subtitle="Generate high-fidelity on-brand imagery from a prompt"
       left={<>
         <Section title="Prompt">
           <PromptInput value={prompt} onChange={setPrompt} tone={tone} onToneChange={setTone}
+            label="Describe Your Image"
+            placeholder="Be specific about subject, style, lighting, mood, and composition for best results"
             attachments={atts} onAttachmentsChange={setAtts} />
         </Section>
         <Section title="Targeting">
@@ -137,8 +144,7 @@ export function ImageLab() {
             <Select value={style} onValueChange={setStyle}>
               <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["Editorial", "Cinematic", "Studio", "Lifestyle", "Bold Pop", "Soft Pastel", "Vintage Film"].map(s =>
-                  <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {IMAGE_LAB_STYLES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -154,6 +160,7 @@ export function ImageLab() {
     />
   );
 }
+
 
 // =================== 1.2 POSTER STUDIO ===================
 export function PosterStudio() {
