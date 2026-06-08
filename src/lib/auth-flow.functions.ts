@@ -313,7 +313,7 @@ export const recordLoginFailure = createServerFn({ method: "POST" })
     }
 
     if (lockedUntil) {
-      await logEvent(null, "account_locked", { email_hash: hashEmail(email) }, ip, getUa());
+      await logEvent(null, "account_locked", { email_hash: await hashEmail(email) }, ip, getUa());
     }
     await logEvent(null, "login_failed", { attempt_number: attempts, has_lockout: Boolean(lockedUntil) }, ip, getUa());
 
@@ -410,16 +410,25 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
     } catch (e) {
       console.error("[requestPasswordReset] failed", e);
     }
-    await logEvent(null, "password_reset_requested", { email_hash: hashEmail(data.email) }, ip, getUa());
+    await logEvent(null, "password_reset_requested", { email_hash: await hashEmail(data.email) }, ip, getUa());
     return {
       success: true,
       message: "If an account exists with this email, you will receive a reset code.",
     };
   });
 
-// SHA-256 of email for logging (no plaintext)
-function hashEmail(email: string): string {
-  let h = 0;
-  for (let i = 0; i < email.length; i++) h = (h * 31 + email.charCodeAt(i)) | 0;
-  return String(h >>> 0);
+// HMAC-SHA-256 of email for logging (no plaintext).
+async function hashEmail(email: string): Promise<string> {
+  const normalized = email.trim().toLowerCase();
+  const keyMaterial = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY ?? "brandsync";
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(keyMaterial),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const digest = await crypto.subtle.sign("HMAC", key, enc.encode(normalized));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
