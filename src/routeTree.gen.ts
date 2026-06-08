@@ -28,6 +28,7 @@ import { Route as DashboardBrandDnaSetupRouteImport } from './routes/dashboard.b
 import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
 import { Route as DashboardAudienceRouteImport } from './routes/dashboard.audience'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard.analytics'
+import { Route as BrandBookSlugRouteImport } from './routes/brand-book.$slug'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as DashboardCreativeTemplatesRouteImport } from './routes/dashboard.creative.templates'
@@ -131,6 +132,11 @@ const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => DashboardRoute,
 } as any)
+const BrandBookSlugRoute = BrandBookSlugRouteImport.update({
+  id: '/brand-book/$slug',
+  path: '/brand-book/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/api/chat': typeof ApiChatRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/brand-book/$slug': typeof BrandBookSlugRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/audience': typeof DashboardAudienceRoute
   '/dashboard/billing': typeof DashboardBillingRoute
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/api/chat': typeof ApiChatRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/brand-book/$slug': typeof BrandBookSlugRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/audience': typeof DashboardAudienceRoute
   '/dashboard/billing': typeof DashboardBillingRoute
@@ -227,6 +235,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/api/chat': typeof ApiChatRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/brand-book/$slug': typeof BrandBookSlugRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/audience': typeof DashboardAudienceRoute
   '/dashboard/billing': typeof DashboardBillingRoute
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/api/chat'
     | '/auth/callback'
+    | '/brand-book/$slug'
     | '/dashboard/analytics'
     | '/dashboard/audience'
     | '/dashboard/billing'
@@ -283,6 +293,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/api/chat'
     | '/auth/callback'
+    | '/brand-book/$slug'
     | '/dashboard/analytics'
     | '/dashboard/audience'
     | '/dashboard/billing'
@@ -310,6 +321,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/api/chat'
     | '/auth/callback'
+    | '/brand-book/$slug'
     | '/dashboard/analytics'
     | '/dashboard/audience'
     | '/dashboard/billing'
@@ -338,6 +350,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   ApiChatRoute: typeof ApiChatRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  BrandBookSlugRoute: typeof BrandBookSlugRoute
   ApiPublicHooksGa4SyncRoute: typeof ApiPublicHooksGa4SyncRoute
   ApiPublicGaOauthCallbackRoute: typeof ApiPublicGaOauthCallbackRoute
 }
@@ -477,6 +490,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAnalyticsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/brand-book/$slug': {
+      id: '/brand-book/$slug'
+      path: '/brand-book/$slug'
+      fullPath: '/brand-book/$slug'
+      preLoaderRoute: typeof BrandBookSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
@@ -595,19 +615,10 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   ApiChatRoute: ApiChatRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  BrandBookSlugRoute: BrandBookSlugRoute,
   ApiPublicHooksGa4SyncRoute: ApiPublicHooksGa4SyncRoute,
   ApiPublicGaOauthCallbackRoute: ApiPublicGaOauthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

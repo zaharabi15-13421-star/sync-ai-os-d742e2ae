@@ -372,6 +372,74 @@ export type Database = {
           },
         ]
       }
+      brand_guideline_generations: {
+        Row: {
+          brand_summary_id: string | null
+          completed_at: string | null
+          created_at: string
+          current_step: string | null
+          error_message: string | null
+          file_size_bytes: number | null
+          file_storage_path: string | null
+          file_url: string | null
+          format: string
+          generation_metadata: Json
+          generation_progress: number
+          id: string
+          sections_count: number | null
+          status: string
+          updated_at: string
+          user_id: string
+          web_book_slug: string | null
+        }
+        Insert: {
+          brand_summary_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_step?: string | null
+          error_message?: string | null
+          file_size_bytes?: number | null
+          file_storage_path?: string | null
+          file_url?: string | null
+          format: string
+          generation_metadata?: Json
+          generation_progress?: number
+          id?: string
+          sections_count?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          web_book_slug?: string | null
+        }
+        Update: {
+          brand_summary_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_step?: string | null
+          error_message?: string | null
+          file_size_bytes?: number | null
+          file_storage_path?: string | null
+          file_url?: string | null
+          format?: string
+          generation_metadata?: Json
+          generation_progress?: number
+          id?: string
+          sections_count?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          web_book_slug?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_guideline_generations_brand_summary_id_fkey"
+            columns: ["brand_summary_id"]
+            isOneToOne: false
+            referencedRelation: "brand_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_guideline_workspaces: {
         Row: {
           colors: Json
@@ -1169,6 +1237,47 @@ export type Database = {
           website_url?: string | null
         }
         Relationships: []
+      }
+      web_brand_books: {
+        Row: {
+          brand_data: Json
+          created_at: string
+          generation_id: string | null
+          id: string
+          is_public: boolean
+          slug: string
+          user_id: string
+          view_count: number
+        }
+        Insert: {
+          brand_data: Json
+          created_at?: string
+          generation_id?: string | null
+          id?: string
+          is_public?: boolean
+          slug: string
+          user_id: string
+          view_count?: number
+        }
+        Update: {
+          brand_data?: Json
+          created_at?: string
+          generation_id?: string | null
+          id?: string
+          is_public?: boolean
+          slug?: string
+          user_id?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_brand_books_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "brand_guideline_generations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       website_analysis: {
         Row: {
