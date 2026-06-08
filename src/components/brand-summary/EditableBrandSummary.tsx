@@ -314,12 +314,44 @@ export function EditableBrandSummary({
       branding?.images?.favicon ||
       null;
 
+    // Derive brand name instantly from <title>, og:site_name, og:title or domain.
+    const meta: any = branding?.metadata ?? {};
+    const rawTitle = (initialFromAnalysis.title ?? "").trim();
+    const ogSiteName = (meta["og:site_name"] || meta.ogSiteName || "").toString().trim();
+    const ogTitle = (meta["og:title"] || meta.ogTitle || "").toString().trim();
+    const titleSeparators = /\s+[|\-–—:·•]\s+/;
+    const fromTitle = rawTitle ? rawTitle.split(titleSeparators)[0]?.trim() : "";
+    const fromOgTitle = ogTitle ? ogTitle.split(titleSeparators)[0]?.trim() : "";
+    let domainBrand = "";
+    try {
+      const host = new URL(incomingUrl).hostname.replace(/^www\./, "");
+      const root = host.split(".")[0] ?? "";
+      domainBrand = root ? root.charAt(0).toUpperCase() + root.slice(1) : "";
+    } catch { /* noop */ }
+    const instantBrandName =
+      ogSiteName || fromTitle || fromOgTitle || domainBrand || null;
+
+    // Derive a tagline instantly from meta description / og:description (first sentence ≤ 20 words).
+    const pickFirstSentence = (s: string | null | undefined): string | null => {
+      if (!s) return null;
+      const first = s.split(/[.!?\n]/)[0]?.trim();
+      if (!first) return null;
+      if (first.split(/\s+/).length > 20) return null;
+      return first;
+    };
+    const ogDesc = (meta["og:description"] || meta.ogDescription || "").toString();
+    const instantTagline =
+      pickFirstSentence(initialFromAnalysis.description) ||
+      pickFirstSentence(ogDesc) ||
+      pickFirstSentence(initialFromAnalysis.summary) ||
+      null;
+
     // When switching brands, wipe any stale fields the previous brand left behind
     // (logo, tagline, brand_values, brand_aesthetic, tone, archetype) so they don't
     // bleed through while the async detect.mutate is still running.
     update.mutate({
       website_url: incomingUrl,
-      brand_name: null,
+      brand_name: instantBrandName,
       page_title: initialFromAnalysis.title ?? null,
       meta_description: initialFromAnalysis.description ?? null,
       ai_summary: initialFromAnalysis.summary ?? null,
@@ -329,7 +361,7 @@ export function EditableBrandSummary({
       logo_url: instantLogo,
       logo_user_uploaded: false,
       logo_storage_path: null,
-      tagline: null,
+      tagline: instantTagline,
       brand_values: [],
       brand_aesthetic: null,
       brand_tone: null,
