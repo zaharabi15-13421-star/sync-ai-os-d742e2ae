@@ -265,13 +265,9 @@ export function EditableBrandSummary({
     );
   };
 
-  // ---- Edit lock: only one field at a time ----
+  // ---- Edit lock: only one field at a time (silent, no browser dialogs) ----
   const [editingField, setEditingField] = useState<string | null>(null);
   const requestEdit = (field: string) => {
-    if (editingField && editingField !== field) {
-      const ok = window.confirm("You have unsaved changes. Discard them?");
-      if (!ok) return;
-    }
     setEditingField(field);
   };
   const stopEdit = () => setEditingField(null);
