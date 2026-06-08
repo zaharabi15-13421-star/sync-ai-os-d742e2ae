@@ -135,8 +135,8 @@ export function useBrandGuidelineGen() {
         const id = startRes.id;
         setGenerationId(id);
 
-        const { data: userData } = await supabase.auth.getUser();
-        const uid = userData.user?.id ?? "anon";
+        const { data: authUser } = await supabase.auth.getUser();
+        const uid = authUser.user?.id ?? "anon";
         channelRef.current = supabase
           .channel(`bgg:${uid}:${id}`)
           .on(
