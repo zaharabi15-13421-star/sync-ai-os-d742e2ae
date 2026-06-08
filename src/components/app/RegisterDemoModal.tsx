@@ -10,7 +10,7 @@ import { Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { DASHBOARD_PATH, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
+import { clearPostAuthRedirect, DASHBOARD_PATH, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
 
 const INDUSTRIES = [
   "Technology / SaaS", "E-commerce / D2C", "Retail", "Fashion & Beauty", "Food & Beverage",
@@ -78,6 +78,7 @@ export function RegisterDemoModal({ open, onOpenChange }: { open: boolean; onOpe
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
+        clearPostAuthRedirect();
         toast.error("Google sign-in failed", {
           description: result.error.message ?? "Please try again or use email login.",
         });
@@ -89,6 +90,7 @@ export function RegisterDemoModal({ open, onOpenChange }: { open: boolean; onOpe
       toast.success("Welcome to BrandSync AI!");
       await finishAuthenticatedRedirect();
     } catch (e) {
+      clearPostAuthRedirect();
       toast.error("Google sign-in failed", {
         description: e instanceof Error ? e.message : "Please try again or use email login.",
       });
