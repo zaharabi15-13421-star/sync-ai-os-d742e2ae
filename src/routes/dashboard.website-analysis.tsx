@@ -74,21 +74,73 @@ function WebsiteIntelligencePage() {
   const [sharedUrl, setSharedUrl] = useState("");
   const [format, setFormat] = useState<GuidelineFormat>("pdf");
 
-  const { query: bsQuery } = useBrandSummary();
+  const fetchLatestForGuideline = useServerFn(getLatestWebsiteAnalysis);
+  const latestForGuideline = useQuery({
+    queryKey: ["website-analysis", "latest"],
+    queryFn: () => fetchLatestForGuideline(),
+    staleTime: 30_000,
+  });
+  const { query: bsQuery, update: bsUpdate } = useBrandSummary();
   const brandSummary = bsQuery.data?.data;
-  const hasSummary = !!brandSummary?.id;
+  const latestAnalysisForGuideline: any = latestForGuideline.data?.analysis;
+  const hasGeneratedAnalysis = latestAnalysisForGuideline?.status === "completed";
+  const hasSummary = !!(
+    brandSummary?.id ||
+    hasGeneratedAnalysis ||
+    brandSummary?.website_url ||
+    brandSummary?.page_title ||
+    brandSummary?.meta_description ||
+    brandSummary?.ai_summary ||
+    brandSummary?.logo_url ||
+    (brandSummary?.brand_colors?.length ?? 0) > 0 ||
+    (brandSummary?.typography?.length ?? 0) > 0
+  );
 
   const gen = useBrandGuidelineGen();
 
-  const handleGenerate = () => {
-    if (!brandSummary?.id) {
+  const handleGenerate = async () => {
+    let summaryForGeneration = brandSummary;
+    let brandSummaryId = brandSummary?.id;
+
+    if (!brandSummaryId && hasGeneratedAnalysis) {
+      const a = latestAnalysisForGuideline;
+      const branding = (a?.branding ?? {}) as any;
+      const colors = branding?.colors
+        ? Object.entries(branding.colors)
+            .filter(([, v]) => typeof v === "string")
+            .map(([k, v]) => ({ role: k, label: k.replace(/([A-Z])/g, " $1").trim(), hex: String(v) }))
+        : [];
+      const fonts = Array.isArray(branding?.fonts)
+        ? branding.fonts.slice(0, 6).map((f: any, i: number) => ({
+            font: f?.family ?? "",
+            usage: i === 0 ? "Used for headings" : i === 1 ? "Used for body text" : "Used for UI elements",
+          }))
+        : [];
+      const created = await bsUpdate.mutateAsync({
+        website_url: a.url ?? null,
+        brand_name: brandSummary?.brand_name ?? null,
+        page_title: a.title ?? null,
+        meta_description: a.description ?? null,
+        ai_summary: a.summary ?? null,
+        brand_colors: colors,
+        typography: fonts,
+        outbound_links: Array.isArray(a.links) ? a.links.slice(0, 100) : [],
+        logo_url: branding?.logo || branding?.images?.logo || branding?.images?.favicon || null,
+        logo_user_uploaded: false,
+        logo_storage_path: null,
+      });
+      summaryForGeneration = created.data;
+      brandSummaryId = created.data.id;
+    }
+
+    if (!brandSummaryId || !summaryForGeneration) {
       toast.error("Run a Brand Summary analysis first to generate your guideline");
       return;
     }
     gen.generate({
-      brandSummaryId: brandSummary.id,
+      brandSummaryId,
       format,
-      brandSummary,
+      brandSummary: summaryForGeneration,
     });
   };
 
