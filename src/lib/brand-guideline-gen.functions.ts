@@ -76,8 +76,8 @@ export const buildGuidelineContent = createServerFn({ method: "POST" })
     }
     const json = (await res.json()) as any;
     const text = json.choices?.[0]?.message?.content ?? "";
-    const content = extractJson(text);
-    return { content, brandSummary: bs };
+    const content = extractJson(text) as Record<string, unknown>;
+    return { content, brandSummary: bs as Record<string, unknown> };
   });
 
 /* Insert generation row (status: generating) */
