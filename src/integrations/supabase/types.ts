@@ -217,6 +217,50 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_attachments: {
+        Row: {
+          created_at: string
+          extracted_text: string | null
+          file_name: string
+          file_size: number
+          file_type: string
+          generation_id: string | null
+          id: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extracted_text?: string | null
+          file_name: string
+          file_size: number
+          file_type: string
+          generation_id?: string | null
+          id?: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          extracted_text?: string | null
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          generation_id?: string | null
+          id?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_attachments_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "creative_generations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_details: {
         Row: {
           address_lines: string | null
@@ -854,6 +898,111 @@ export type Database = {
           },
         ]
       }
+      creative_context_memory: {
+        Row: {
+          audience_profile: Json | null
+          brand_context: Json | null
+          id: string
+          industry: string | null
+          last_topics: string[] | null
+          preferred_tone: string | null
+          style_history: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audience_profile?: Json | null
+          brand_context?: Json | null
+          id?: string
+          industry?: string | null
+          last_topics?: string[] | null
+          preferred_tone?: string | null
+          style_history?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audience_profile?: Json | null
+          brand_context?: Json | null
+          id?: string
+          industry?: string | null
+          last_topics?: string[] | null
+          preferred_tone?: string | null
+          style_history?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      creative_generations: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          error_message: string | null
+          generation_time_ms: number | null
+          id: string
+          input_data: Json
+          is_favorite: boolean | null
+          model_used: string
+          module: string
+          output_content: string | null
+          output_image_url: string | null
+          output_image_urls: string[] | null
+          output_type: string
+          prompt_used: string | null
+          quality_score: number | null
+          status: string | null
+          token_count: number | null
+          updated_at: string
+          user_id: string
+          version: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          generation_time_ms?: number | null
+          id?: string
+          input_data?: Json
+          is_favorite?: boolean | null
+          model_used: string
+          module: string
+          output_content?: string | null
+          output_image_url?: string | null
+          output_image_urls?: string[] | null
+          output_type: string
+          prompt_used?: string | null
+          quality_score?: number | null
+          status?: string | null
+          token_count?: number | null
+          updated_at?: string
+          user_id: string
+          version?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          generation_time_ms?: number | null
+          id?: string
+          input_data?: Json
+          is_favorite?: boolean | null
+          model_used?: string
+          module?: string
+          output_content?: string | null
+          output_image_url?: string | null
+          output_image_urls?: string[] | null
+          output_type?: string
+          prompt_used?: string | null
+          quality_score?: number | null
+          status?: string | null
+          token_count?: number | null
+          updated_at?: string
+          user_id?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       ga4_properties: {
         Row: {
           account_id: string | null
@@ -1100,6 +1249,33 @@ export type Database = {
           metadata?: Json
           property_id?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+      seo_keyword_cache: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          language: string | null
+          seed_keyword: string
+          suggestions: Json
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          language?: string | null
+          seed_keyword: string
+          suggestions: Json
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          language?: string | null
+          seed_keyword?: string
+          suggestions?: Json
         }
         Relationships: []
       }
