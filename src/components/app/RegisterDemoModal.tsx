@@ -10,7 +10,7 @@ import { Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { clearPostAuthRedirect, DASHBOARD_PATH, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
+import { clearPostAuthRedirect, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
 import { redirectToAuthenticatedDestination } from "@/lib/auth-session";
 
 const INDUSTRIES = [
