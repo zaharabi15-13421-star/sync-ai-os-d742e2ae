@@ -682,17 +682,6 @@ function Results({
         )}
       </SectionCard>
 
-      {/* R7 Contact */}
-      <SectionCard>
-        <SectionHeader icon={<FileText className="h-4 w-4 text-purple-300" />} title="Contact Information" />
-        {intelLoading ? <SkeletonBlock /> : <ContactList c={intel?.contact} />}
-      </SectionCard>
-
-      {/* R8 Social */}
-      <SectionCard>
-        <SectionHeader icon={<Share2 className="h-4 w-4 text-purple-300" />} title="Social Media Presence" />
-        {intelLoading ? <SkeletonBlock /> : <SocialChips list={intel?.social ?? []} />}
-      </SectionCard>
 
       {/* R9 Tech */}
       <SectionCard>
