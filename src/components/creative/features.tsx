@@ -23,38 +23,52 @@ import {
   generateScript,
   generateImage,
   critiqueContent,
+  saveGeneration,
 } from "@/lib/creative.functions";
 
 function useGenerator() {
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [output, setOutput] = useState<any>(null);
+  const [lastModule, setLastModule] = useState<string>("");
 
   const run = async (kind: string, inputData?: any) => {
     setGenerated(false);
     setLoading(true);
+    setLastModule(kind);
     try {
       let result;
+      let outputType: "text" | "image" | "json" = "text";
+      let outputContent: string | undefined;
+      let outputImageUrl: string | undefined;
+
       switch (kind) {
         case "caption":
           result = await generateCaption({ data: inputData });
           setOutput({ caption: result.caption });
+          outputContent = result.caption;
           break;
         case "hashtags":
           result = await generateHashtags({ data: inputData });
           setOutput({ hashtags: result.hashtags });
+          outputContent = JSON.stringify(result.hashtags);
+          outputType = "json";
           break;
         case "blog":
           result = await generateBlog({ data: inputData });
           setOutput({ blogPost: result.blogPost, wordCount: result.wordCount });
+          outputContent = result.blogPost;
           break;
         case "product-desc":
           result = await generateProductDescription({ data: inputData });
           setOutput({ description: result.description });
+          outputContent = result.description;
           break;
         case "script":
           result = await generateScript({ data: inputData });
           setOutput({ script: result.script });
+          outputContent = JSON.stringify(result.script);
+          outputType = "json";
           break;
         case "image-lab":
         case "thumbnail":
@@ -64,12 +78,27 @@ function useGenerator() {
         case "product-photo":
           result = await generateImage({ data: { ...inputData, kind } });
           setOutput({ imageUrl: result.imageUrl });
+          outputImageUrl = result.imageUrl;
+          outputType = "image";
           break;
         default:
           throw new Error(`Unknown generator type: ${kind}`);
       }
       setGenerated(true);
       toast.success("Generated with AI");
+
+      // Fire-and-forget: persist to creative_generations
+      saveGeneration({
+        data: {
+          module: kind,
+          output_type: outputType,
+          output_content: outputContent,
+          output_image_url: outputImageUrl,
+          prompt_used: inputData?.prompt || inputData?.description || inputData?.topic || "",
+          input_data: inputData || {},
+          model_used: outputType === "image" ? "google/gemini-3-pro-image-preview" : "google/gemini-2.5-pro",
+        },
+      }).catch(() => { /* ignore */ });
     } catch (error) {
       console.error("Generation failed:", error);
       const msg = error instanceof Error ? error.message : "Failed to generate. Please try again.";
@@ -79,8 +108,9 @@ function useGenerator() {
     }
   };
 
-  return { loading, generated, run, output };
+  return { loading, generated, run, output, lastModule };
 }
+
 
 // Reusable placeholder output canvases
 function ImageOutput({ tint = "from-indigo-600 to-purple-700", label, imageUrl }: { tint?: string; label: string; imageUrl?: string }) {
