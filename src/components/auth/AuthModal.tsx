@@ -337,7 +337,6 @@ function EntryScreen({
       if (result.redirected) return;
       toast.success("Welcome to BrandSync AI!");
       onGoogleDone();
-      await finishAuthenticatedRedirect();
     } catch (e) {
       clearPostAuthRedirect();
       toast.error("Google sign-in failed", { description: e instanceof Error ? e.message : "Please try again." });
@@ -913,7 +912,6 @@ function LoginScreen({
       }
       if (result.redirected) return;
       onGoogleDone();
-      await finishAuthenticatedRedirect();
     } catch (e) {
       clearPostAuthRedirect();
       toast.error("Google sign-in failed");
