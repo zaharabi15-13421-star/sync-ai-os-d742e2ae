@@ -138,10 +138,10 @@ function RootComponent() {
 
 function AuthRedirector({ queryClient }: { queryClient: QueryClient }) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading, workspaceReady } = useAuth();
 
   useEffect(() => {
-    if (!user || typeof window === "undefined") return;
+    if (loading || !user || !workspaceReady || typeof window === "undefined") return;
 
     void router.invalidate();
     void queryClient.invalidateQueries();
@@ -153,7 +153,7 @@ function AuthRedirector({ queryClient }: { queryClient: QueryClient }) {
     if (window.location.pathname !== targetPath) {
       window.location.assign(targetPath);
     }
-  }, [queryClient, router, user]);
+  }, [loading, queryClient, router, user, workspaceReady]);
 
   return null;
 }
