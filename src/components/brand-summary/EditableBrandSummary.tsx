@@ -265,13 +265,9 @@ export function EditableBrandSummary({
     );
   };
 
-  // ---- Edit lock: only one field at a time ----
+  // ---- Edit lock: only one field at a time (silent, no browser dialogs) ----
   const [editingField, setEditingField] = useState<string | null>(null);
   const requestEdit = (field: string) => {
-    if (editingField && editingField !== field) {
-      const ok = window.confirm("You have unsaved changes. Discard them?");
-      if (!ok) return;
-    }
     setEditingField(field);
   };
   const stopEdit = () => setEditingField(null);
@@ -318,12 +314,44 @@ export function EditableBrandSummary({
       branding?.images?.favicon ||
       null;
 
+    // Derive brand name instantly from <title>, og:site_name, og:title or domain.
+    const meta: any = branding?.metadata ?? {};
+    const rawTitle = (initialFromAnalysis.title ?? "").trim();
+    const ogSiteName = (meta["og:site_name"] || meta.ogSiteName || "").toString().trim();
+    const ogTitle = (meta["og:title"] || meta.ogTitle || "").toString().trim();
+    const titleSeparators = /\s+[|\-–—:·•]\s+/;
+    const fromTitle = rawTitle ? rawTitle.split(titleSeparators)[0]?.trim() : "";
+    const fromOgTitle = ogTitle ? ogTitle.split(titleSeparators)[0]?.trim() : "";
+    let domainBrand = "";
+    try {
+      const host = new URL(incomingUrl).hostname.replace(/^www\./, "");
+      const root = host.split(".")[0] ?? "";
+      domainBrand = root ? root.charAt(0).toUpperCase() + root.slice(1) : "";
+    } catch { /* noop */ }
+    const instantBrandName =
+      ogSiteName || fromTitle || fromOgTitle || domainBrand || null;
+
+    // Derive a tagline instantly from meta description / og:description (first sentence ≤ 20 words).
+    const pickFirstSentence = (s: string | null | undefined): string | null => {
+      if (!s) return null;
+      const first = s.split(/[.!?\n]/)[0]?.trim();
+      if (!first) return null;
+      if (first.split(/\s+/).length > 20) return null;
+      return first;
+    };
+    const ogDesc = (meta["og:description"] || meta.ogDescription || "").toString();
+    const instantTagline =
+      pickFirstSentence(initialFromAnalysis.description) ||
+      pickFirstSentence(ogDesc) ||
+      pickFirstSentence(initialFromAnalysis.summary) ||
+      null;
+
     // When switching brands, wipe any stale fields the previous brand left behind
     // (logo, tagline, brand_values, brand_aesthetic, tone, archetype) so they don't
     // bleed through while the async detect.mutate is still running.
     update.mutate({
       website_url: incomingUrl,
-      brand_name: null,
+      brand_name: instantBrandName,
       page_title: initialFromAnalysis.title ?? null,
       meta_description: initialFromAnalysis.description ?? null,
       ai_summary: initialFromAnalysis.summary ?? null,
@@ -333,7 +361,7 @@ export function EditableBrandSummary({
       logo_url: instantLogo,
       logo_user_uploaded: false,
       logo_storage_path: null,
-      tagline: null,
+      tagline: instantTagline,
       brand_values: [],
       brand_aesthetic: null,
       brand_tone: null,
@@ -401,11 +429,9 @@ export function EditableBrandSummary({
       <TypographyField data={data} editingField={editingField} requestEdit={requestEdit} stopEdit={stopEdit}
         update={update} />
 
-      <BrandToneField data={data} editingField={editingField} requestEdit={requestEdit} stopEdit={stopEdit}
-        update={update} onEnhance={runEnhance} />
+      <BrandToneDropdownField data={data} update={update} />
 
-      <BrandArchetypeField data={data} editingField={editingField} requestEdit={requestEdit} stopEdit={stopEdit}
-        update={update} onEnhance={runEnhance} />
+      <BrandArchetypeDropdownField data={data} update={update} />
 
       <OutboundLinksField data={data} editingField={editingField} requestEdit={requestEdit} stopEdit={stopEdit}
         update={update} />
@@ -950,153 +976,96 @@ function TypographyField({ data, editingField, requestEdit, stopEdit, update }: 
   );
 }
 
-/* ---- Brand Tone ---- */
-function BrandToneField({ data, editingField, requestEdit, stopEdit, update, onEnhance }: FieldCommon) {
-  const isEditing = editingField === "brand_tone";
-  const [tone, setTone] = useState<string>(data.brand_tone ?? "");
-  const [custom, setCustom] = useState<string>(data.brand_tone_is_custom ? (data.brand_tone ?? "") : "");
-  useEffect(() => {
-    setTone(data.brand_tone ?? "");
-    setCustom(data.brand_tone_is_custom ? (data.brand_tone ?? "") : "");
-  }, [data.brand_tone, data.brand_tone_is_custom, isEditing]);
-  const save = async () => {
-    const value = custom.trim() || tone;
-    const isCustom = !!custom.trim();
-    await update.mutateAsync({ brand_tone: value || null, brand_tone_is_custom: isCustom } as any);
-    toast.success("Saved");
-    stopEdit();
+/* ---- Brand Tone (simple dropdown, auto-save) ---- */
+function BrandToneDropdownField({
+  data, update,
+}: {
+  data: BrandSummary;
+  update: ReturnType<typeof useBrandSummary>["update"];
+}) {
+  const value = data.brand_tone ?? "";
+  const onChange = (v: string) => {
+    update.mutate({ brand_tone: v || null, brand_tone_is_custom: false } as any, {
+      onSuccess: () => { if (v) toast.success("Saved"); },
+    });
   };
   return (
-    <FieldCard
-      fieldName="brand_tone" label="Brand Tone" icon={<MessageCircle className="h-4 w-4" />} optional
-      isEditing={isEditing}
-      onEdit={() => requestEdit("brand_tone")}
-      onCancel={() => stopEdit()}
-      onSave={save}
-      isSaving={update.isPending && isEditing}
-      onEnhance={() => onEnhance?.("brand_tone", "Brand Tone", data.brand_tone ?? "", async (v) => {
-        await update.mutateAsync({ brand_tone: v, brand_tone_is_custom: !BRAND_TONE_OPTIONS.includes(v as any) } as any);
-      })}
+    <div
+      className="rounded-xl p-5"
+      style={{ background: "#0F0F1A", border: "0.5px solid #1E1E35" }}
     >
-      {!isEditing ? (
-        data.brand_tone ? (
-          <span
-            className="inline-flex items-center rounded-full px-3.5 py-1 text-sm font-medium"
-            style={{ background: "rgba(124,58,237,0.08)", border: "0.5px solid rgba(124,58,237,0.25)", color: "#A78BFA" }}
-          >{data.brand_tone}</span>
-        ) : (
-          <p className="text-sm text-[#94A3B8]">Not set — click Edit to select your brand tone</p>
-        )
-      ) : (
-        <div className="space-y-3">
-          <select
-            value={tone}
-            onChange={(e) => { setTone(e.target.value); setCustom(""); }}
-            aria-label="Brand tone"
-            className="w-full rounded-lg px-3 py-2.5 text-sm"
-            style={inputStyle}
-          >
-            <option value="">— Select a tone —</option>
-            {BRAND_TONE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-          </select>
-          <div>
-            <div className="text-[12px] text-[#64748B] mb-1">Or type a custom brand tone:</div>
-            <Input
-              value={custom}
-              placeholder="e.g. Witty and conversational"
-              onChange={(e) => setCustom(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-        </div>
-      )}
-    </FieldCard>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-[#94A3B8]"><MessageCircle className="h-4 w-4" /></span>
+        <span className="text-sm font-medium text-[#E2E8F0]">Brand Tone</span>
+        <span
+          className="ml-1 text-[10px] rounded px-1.5 py-0.5"
+          style={{ background: "rgba(100,116,139,0.1)", color: "#64748B" }}
+        >
+          Optional
+        </span>
+      </div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label="Brand tone"
+        className="w-full rounded-lg px-3 py-2.5 text-sm"
+        style={inputStyle}
+      >
+        <option value="">— Select a tone —</option>
+        {BRAND_TONE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </div>
   );
 }
 
-/* ---- Brand Archetype ---- */
-function BrandArchetypeField({ data, editingField, requestEdit, stopEdit, update, onEnhance }: FieldCommon) {
-  const isEditing = editingField === "brand_archetype";
-  const [arch, setArch] = useState<string>(data.brand_archetype ?? "");
-  const [custom, setCustom] = useState<string>(data.brand_archetype_is_custom ? (data.brand_archetype ?? "") : "");
-  useEffect(() => {
-    setArch(data.brand_archetype ?? "");
-    setCustom(data.brand_archetype_is_custom ? (data.brand_archetype ?? "") : "");
-  }, [data.brand_archetype, data.brand_archetype_is_custom, isEditing]);
+/* ---- Brand Archetype (simple dropdown, auto-save) ---- */
+function BrandArchetypeDropdownField({
+  data, update,
+}: {
+  data: BrandSummary;
+  update: ReturnType<typeof useBrandSummary>["update"];
+}) {
+  const value = data.brand_archetype ?? "";
   const description = useMemo(
     () => BRAND_ARCHETYPE_OPTIONS.find((a) => a.name === data.brand_archetype)?.description,
     [data.brand_archetype],
   );
-  const save = async () => {
-    const value = custom.trim() || arch;
-    const isCustom = !!custom.trim();
-    await update.mutateAsync({ brand_archetype: value || null, brand_archetype_is_custom: isCustom } as any);
-    toast.success("Saved");
-    stopEdit();
+  const onChange = (v: string) => {
+    update.mutate({ brand_archetype: v || null, brand_archetype_is_custom: false } as any, {
+      onSuccess: () => { if (v) toast.success("Saved"); },
+    });
   };
   return (
-    <FieldCard
-      fieldName="brand_archetype" label="Brand Archetype" icon={<UserCheck className="h-4 w-4" />} optional
-      isEditing={isEditing}
-      onEdit={() => requestEdit("brand_archetype")}
-      onCancel={() => stopEdit()}
-      onSave={save}
-      isSaving={update.isPending && isEditing}
-      onEnhance={() => onEnhance?.("brand_archetype", "Brand Archetype", data.brand_archetype ?? "", async (v) => {
-        const isPredef = BRAND_ARCHETYPE_OPTIONS.some((a) => a.name === v);
-        await update.mutateAsync({ brand_archetype: v, brand_archetype_is_custom: !isPredef } as any);
-      })}
+    <div
+      className="rounded-xl p-5"
+      style={{ background: "#0F0F1A", border: "0.5px solid #1E1E35" }}
     >
-      {!isEditing ? (
-        data.brand_archetype ? (
-          <div>
-            <span
-              className="inline-flex items-center rounded-full px-3.5 py-1 text-sm font-medium"
-              style={{ background: "rgba(124,58,237,0.08)", border: "0.5px solid rgba(124,58,237,0.25)", color: "#A78BFA" }}
-            >{data.brand_archetype}</span>
-            {description && <div className="text-xs italic text-[#94A3B8] mt-1.5">{description}</div>}
-          </div>
-        ) : (
-          <p className="text-sm text-[#94A3B8]">Not set — click Edit to select your brand archetype</p>
-        )
-      ) : (
-        <div className="space-y-3">
-          <div className="max-h-72 overflow-y-auto rounded-lg" style={{ background: "#080814", border: "0.5px solid #1E1E35" }}>
-            {BRAND_ARCHETYPE_OPTIONS.map((a) => {
-              const selected = arch === a.name;
-              return (
-                <button
-                  type="button"
-                  key={a.name}
-                  role="option"
-                  aria-selected={selected}
-                  onClick={() => { setArch(a.name); setCustom(""); }}
-                  className="w-full text-left px-3 py-2 transition"
-                  style={{
-                    background: selected ? "rgba(124,58,237,0.08)" : "transparent",
-                    borderLeft: selected ? "3px solid #7C3AED" : "3px solid transparent",
-                  }}
-                  onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
-                  onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "transparent"; }}
-                >
-                  <div className="text-sm font-medium text-[#E2E8F0]">{a.name}</div>
-                  <div className="text-xs text-[#94A3B8] mt-0.5">{a.description}</div>
-                </button>
-              );
-            })}
-          </div>
-          <div>
-            <div className="text-[12px] text-[#64748B] mb-1">Or type a custom brand archetype:</div>
-            <Input
-              value={custom}
-              placeholder="e.g. The Disruptor"
-              onChange={(e) => setCustom(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-        </div>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-[#94A3B8]"><UserCheck className="h-4 w-4" /></span>
+        <span className="text-sm font-medium text-[#E2E8F0]">Brand Archetype</span>
+        <span
+          className="ml-1 text-[10px] rounded px-1.5 py-0.5"
+          style={{ background: "rgba(100,116,139,0.1)", color: "#64748B" }}
+        >
+          Optional
+        </span>
+      </div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label="Brand archetype"
+        className="w-full rounded-lg px-3 py-2.5 text-sm"
+        style={inputStyle}
+      >
+        <option value="">— Select an archetype —</option>
+        {BRAND_ARCHETYPE_OPTIONS.map((a) => (
+          <option key={a.name} value={a.name}>{a.name}</option>
+        ))}
+      </select>
+      {description && (
+        <div className="text-xs italic text-[#94A3B8] mt-2">{description}</div>
       )}
-    </FieldCard>
+    </div>
   );
 }
 
