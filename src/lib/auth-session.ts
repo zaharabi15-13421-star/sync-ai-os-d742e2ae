@@ -20,6 +20,8 @@ const AUTH_PARAM_NAMES = new Set([
 
 type OtpType = "signup" | "invite" | "magiclink" | "recovery" | "email_change" | "email";
 
+let finalizeInFlight: Promise<{ handled: boolean; session: Session | null }> | null = null;
+
 export function hasAuthParamsInUrl() {
   if (typeof window === "undefined") return false;
   const url = new URL(window.location.href);
@@ -31,6 +33,18 @@ export function hasAuthParamsInUrl() {
 }
 
 export async function finalizeAuthSessionFromUrl() {
+  if (typeof window === "undefined") return { handled: false, session: null as Session | null };
+
+  if (finalizeInFlight) return finalizeInFlight;
+
+  finalizeInFlight = finalizeAuthSessionFromUrlInternal().finally(() => {
+    finalizeInFlight = null;
+  });
+
+  return finalizeInFlight;
+}
+
+async function finalizeAuthSessionFromUrlInternal() {
   if (typeof window === "undefined") return { handled: false, session: null as Session | null };
 
   const url = new URL(window.location.href);
