@@ -184,7 +184,7 @@ export function ImageLab() {
           Generate Image
         </Button>
       </>}
-      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={runGen} kind="image">
+      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={runGen} kind="image" module={g.lastModule} imageUrl={g.output?.imageUrl}>
         <ImageOutput label="Image Lab" imageUrl={g.output?.imageUrl} />
       </OutputPanel>}
     />
@@ -260,7 +260,7 @@ export function PosterStudio() {
           <Sparkles className="h-4 w-4 mr-2" /> Generate Poster
         </Button>
       </>}
-      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={runGen} kind="image">
+      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={runGen} kind="image" module={g.lastModule} imageUrl={g.output?.imageUrl}>
         {g.output?.imageUrl ? (
           <div className="rounded-lg overflow-hidden border border-white/10">
             <img src={g.output.imageUrl} alt={title} className="w-full h-auto" />
@@ -327,7 +327,7 @@ export function VirtualTryOn() {
           <Sparkles className="h-4 w-4 mr-2" /> Generate Self Model
         </Button>
       </>}
-      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={runGen} kind="image">
+      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={runGen} kind="image" module={g.lastModule} imageUrl={g.output?.imageUrl}>
         <ImageOutput tint="from-rose-500 to-fuchsia-700" label="Try-On Result" imageUrl={g.output?.imageUrl} />
       </OutputPanel>}
     />
@@ -393,7 +393,7 @@ export function ProductHolography() {
           <Sparkles className="h-4 w-4 mr-2" /> Generate Hologram
         </Button>
       </>}
-      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={runGen} kind="image">
+      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={runGen} kind="image" module={g.lastModule} imageUrl={g.output?.imageUrl}>
         <ImageOutput tint="from-cyan-500 via-indigo-600 to-purple-700" label="Hologram" imageUrl={g.output?.imageUrl} />
       </OutputPanel>}
     />
@@ -426,7 +426,7 @@ export function ProductPhotography() {
           <Sparkles className="h-4 w-4 mr-2" /> Generate Studio Shots
         </Button>
       </>}
-      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={runGen} kind="image">
+      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={runGen} kind="image" module={g.lastModule} imageUrl={g.output?.imageUrl}>
         <ImageOutput tint="from-amber-500 via-rose-500 to-purple-700" label="Studio Shot" imageUrl={g.output?.imageUrl} />
       </OutputPanel>}
     />
@@ -543,7 +543,7 @@ export function BlogPilot() {
           <Sparkles className="h-4 w-4 mr-2" /> Generate Blog
         </Button>
       </>}
-      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={handleGenerate} contentForCritique={g.output?.blogPost || ""} kind="content">
+      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={handleGenerate} contentForCritique={g.output?.blogPost || ""} kind="content" module={g.lastModule} textContent={g.output?.blogPost || ""}>
         <TextOutput title={topics[0] || "AI-Powered Marketing Blog"}
           body={g.output?.blogPost || "Your AI-generated blog post will appear here..."} />
       </OutputPanel>}
@@ -608,7 +608,7 @@ export function CaptionCraft() {
           <Sparkles className="h-4 w-4 mr-2" /> Generate Caption
         </Button>
       </>}
-      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={handleGenerate} contentForCritique={g.output?.caption || ""} kind="content">
+      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={handleGenerate} contentForCritique={g.output?.caption || ""} kind="content" module={g.lastModule} textContent={g.output?.caption || ""}>
         <TextOutput title="Generated Caption"
           body={g.output?.caption || "Your AI-generated caption will appear here..."} />
       </OutputPanel>}
@@ -666,7 +666,7 @@ export function HashtagWizard() {
           <Sparkles className="h-4 w-4 mr-2" /> Generate Hashtags
         </Button>
       </>}
-      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={handleGenerate} kind="content">
+      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={handleGenerate} kind="content" module={g.lastModule} textContent={JSON.stringify(g.output ?? "", null, 2)}>
         <div className="space-y-4">
           {g.generated ? (
             <>
@@ -787,7 +787,7 @@ export function ProductDescription() {
           <Sparkles className="h-4 w-4 mr-2" /> Generate Description
         </Button>
       </>}
-      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={handleGenerate} contentForCritique={g.output?.description || ""} kind="content">
+      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={handleGenerate} contentForCritique={g.output?.description || ""} kind="content" module={g.lastModule} textContent={g.output?.description || ""}>
         <TextOutput title={name}
           body={g.output?.description || "Your AI-generated product description will appear here..."} />
       </OutputPanel>}
@@ -1026,7 +1026,7 @@ export function ScriptWriter() {
           <Sparkles className="h-4 w-4 mr-2" /> Generate Script
         </Button>
       </>}
-      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={handleGenerate} kind="content">
+      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={handleGenerate} kind="content" module={g.lastModule} textContent={JSON.stringify(g.output ?? "", null, 2)}>
         <div className="space-y-4">
           {g.generated && script ? (
             <>
