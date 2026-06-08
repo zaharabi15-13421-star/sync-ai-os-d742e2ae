@@ -199,10 +199,12 @@ export const generateScript = createServerFn({ method: "POST" })
       audience: z.array(z.string()).default([]),
       tone: z.string().default("Energetic"),
       language: z.string().default("English"),
+      videoGoal: z.string().optional(),
+      description: z.string().optional(),
     }).parse(data);
   })
   .handler(async ({ data }) => {
-    const { topic, duration, audience, tone, language } = data;
+    const { topic, duration, audience, tone, language, videoGoal, description } = data;
 
     const result = await generateObject({
       model: googleModel(),
@@ -216,6 +218,8 @@ export const generateScript = createServerFn({ method: "POST" })
       prompt: `Create a YouTube script in ${language} for a ${duration}-minute video.
 
 Topic: ${topic}
+${videoGoal ? `Video Goal: ${videoGoal}` : ""}
+${description ? `Additional Context: ${description}` : ""}
 Target Audience: ${audience.join(", ") || "General"}
 Tone: ${tone}
 
@@ -223,6 +227,7 @@ Structure the script with:
 1. HOOK (0:00-0:15): Attention-grabbing opening
 2. INTRO (0:15-0:45): Who you are and what this video covers
 3. BODY (0:45-End-1:00): Main content with key points
+
 4. CTA (End-1:00-End-0:30): Call to action
 5. OUTRO (End-0:30-End): Sign off
 
