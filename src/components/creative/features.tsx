@@ -496,16 +496,19 @@ export function BlogPilot() {
               </Select>
             </div>
           </div>
-          <SeoKeywordPicker value={keywords} onChange={setKeywords} />
+          <SeoKeywordPicker value={keywords} onChange={setKeywords} language={lang} />
           <div>
             <FieldLabel>Language</FieldLabel>
             <SearchSelect value={lang} onChange={setLang} options={LANGUAGES} />
           </div>
-          <div>
-            <FieldLabel>Description</FieldLabel>
-            <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} className="bg-white/5 border-white/10" placeholder="AI will draft a description once fields are filled." />
-          </div>
+          <PromptInput
+            value={desc} onChange={setDesc} rows={4}
+            label="Topic Description & Context"
+            placeholder="Describe your blog topic, key points to cover, target audience, or paste a URL for reference. You can also upload files or images for context..."
+            tone={undefined as any}
+          />
         </Section>
+
         <Button onClick={handleGenerate} disabled={g.loading} className="w-full bg-gradient-to-r from-indigo-500 to-purple-600">
           <Sparkles className="h-4 w-4 mr-2" /> Generate Blog
         </Button>
