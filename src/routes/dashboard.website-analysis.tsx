@@ -76,7 +76,7 @@ function WebsiteIntelligencePage() {
 
   const { query: bsQuery } = useBrandSummary();
   const brandSummary = bsQuery.data?.data;
-  const hasSummary = !!(brandSummary?.id && brandSummary?.brand_name);
+  const hasSummary = !!brandSummary?.id;
 
   const gen = useBrandGuidelineGen();
 
