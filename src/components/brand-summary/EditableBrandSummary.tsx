@@ -429,11 +429,9 @@ export function EditableBrandSummary({
       <TypographyField data={data} editingField={editingField} requestEdit={requestEdit} stopEdit={stopEdit}
         update={update} />
 
-      <BrandToneField data={data} editingField={editingField} requestEdit={requestEdit} stopEdit={stopEdit}
-        update={update} onEnhance={runEnhance} />
+      <BrandToneDropdownField data={data} update={update} />
 
-      <BrandArchetypeField data={data} editingField={editingField} requestEdit={requestEdit} stopEdit={stopEdit}
-        update={update} onEnhance={runEnhance} />
+      <BrandArchetypeDropdownField data={data} update={update} />
 
       <OutboundLinksField data={data} editingField={editingField} requestEdit={requestEdit} stopEdit={stopEdit}
         update={update} />
