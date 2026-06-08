@@ -10,7 +10,7 @@ import { Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { clearPostAuthRedirect, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
+import { clearPostAuthRedirect, getAuthCallbackUrl, getOAuthRedirectUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
 import { redirectToAuthenticatedDestination } from "@/lib/auth-session";
 
 const INDUSTRIES = [
@@ -69,7 +69,7 @@ export function RegisterDemoModal({ open, onOpenChange }: { open: boolean; onOpe
     try {
       rememberPostAuthRedirect();
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: getAuthCallbackUrl(),
+        redirect_uri: getOAuthRedirectUrl(),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
