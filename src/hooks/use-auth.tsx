@@ -31,6 +31,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [workspaceReady, setWorkspaceReady] = useState(false);
 
+  const ensureWorkspaceWithRetry = async () => {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        await ensureWorkspaceRef.current();
+        return;
+      } catch (error) {
+        lastError = error;
+        await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+      }
+    }
+    throw lastError;
+  };
+
   useEffect(() => {
     let mounted = true;
     let hydrated = false;
@@ -58,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (userId !== lastEnsuredUserId.current) {
         lastEnsuredUserId.current = userId;
-        void ensureWorkspaceRef.current()
+        void ensureWorkspaceWithRetry()
           .then(() => finish(true))
           .catch((error) => {
             lastEnsuredUserId.current = null;
