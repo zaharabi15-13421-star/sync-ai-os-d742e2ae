@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-2.5-flash";
@@ -43,6 +44,7 @@ async function callAiJson<T = unknown>(
 
 /* ============ Brand name autocomplete ============ */
 export const suggestBrands = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z.object({ query: z.string().trim().min(2).max(60) }).parse(d),
   )
@@ -60,6 +62,7 @@ export const suggestBrands = createServerFn({ method: "POST" })
 
 /* ============ Brand intelligence (health + competitors + contact + social + tech) ============ */
 export const generateBrandIntelligence = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -140,6 +143,7 @@ Rules: 4-5 real competitors prioritising BD/SEA. Use varied realistic health sco
 const SEO_RANGES = ["3d", "7d", "30d", "3m", "custom"] as const;
 
 export const generateSeoData = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
       .object({
