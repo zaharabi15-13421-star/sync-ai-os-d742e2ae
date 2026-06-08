@@ -562,3 +562,62 @@ export const generateThumbnail = createServerFn({ method: "POST" })
   }).parse(data))
   .handler(async () => ({ thumbnailData: "Use generateImage instead" }));
 
+// =================== GENERATION PERSISTENCE & HISTORY ===================
+
+/**
+ * Save a successful generation to creative_generations.
+ */
+export const saveGeneration = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({
+    module: z.string().min(1),
+    output_type: z.enum(["text", "image", "json"]).default("text"),
+    output_content: z.string().optional(),
+    output_image_url: z.string().optional(),
+    prompt_used: z.string().optional(),
+    input_data: z.record(z.string(), z.any()).default({}),
+    quality_score: z.number().min(0).max(10).optional(),
+    model_used: z.string().default("google/gemini-2.5-pro"),
+  }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { error, data: row } = await context.supabase
+      .from("creative_generations")
+      .insert({
+        user_id: context.userId,
+        module: data.module,
+        output_type: data.output_type,
+        output_content: data.output_content ?? null,
+        output_image_url: data.output_image_url ?? null,
+        prompt_used: data.prompt_used ?? null,
+        input_data: data.input_data,
+        quality_score: data.quality_score ?? null,
+        model_used: data.model_used,
+        status: "completed",
+      })
+      .select("id")
+      .single();
+    if (error) return { id: null as string | null };
+    return { id: row?.id ?? null };
+  });
+
+/**
+ * List the most recent N generations for a given module (current user).
+ */
+export const listGenerations = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({
+    module: z.string().min(1),
+    limit: z.coerce.number().min(1).max(10).default(3),
+  }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: rows } = await context.supabase
+      .from("creative_generations")
+      .select("id, module, output_type, output_content, output_image_url, prompt_used, quality_score, created_at")
+      .eq("module", data.module)
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(data.limit);
+    return { items: rows ?? [] };
+  });
+
+
