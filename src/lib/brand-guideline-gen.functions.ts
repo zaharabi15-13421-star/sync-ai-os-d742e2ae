@@ -3,14 +3,134 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /* AI content schema reused from existing generator */
-const SYSTEM = `You are a world-class brand strategist and creative director. Given the brand data, return ONLY a single valid JSON object (no markdown, no preamble) with this exact shape:
+const SYSTEM = `You are a Global Creative Director and Brand Strategist at a top-tier branding consultancy (Pentagram / Wolff Olins / Landor caliber). You will produce a COMPLETE, RESEARCH-GRADE, AGENCY-QUALITY brand guideline document.
+
+CRITICAL RULES:
+- Output ONLY one valid JSON object. No markdown, no preamble, no trailing commentary.
+- Every text field must be substantial, specific, and decision-ready — NOT generic platitudes.
+- Long-form fields (brand_story, mission_statement, vision_statement, positioning_statement, personality_description, etc.) must be 3–6 sentences minimum, written with confident editorial polish.
+- Arrays should be FULL: dos/donts ≥ 8 each, core_values 5–7, sample_taglines ≥ 6, sample_headlines ≥ 6, sample_social_posts ≥ 4, font_usage_rules ≥ 6, logo forbidden_uses ≥ 8, brand_applications categories ≥ 5 items each, content_pillars ≥ 5.
+- Reference the actual brand inputs (name, industry/aesthetic, colors, typography, summary). Do not invent contradictory facts; extrapolate plausibly when data is missing.
+- For every color in color_palette, also output rgb (object with r,g,b 0-255), cmyk (object with c,m,y,k 0-100), pantone_suggestion (string, e.g. "PMS 2425 C"), psychology (1-2 sentences), and usage (specific application rules).
+- For typography, provide a full hierarchy scale (H1/H2/H3/H4/Body Large/Body/Caption) each with font, weight, size (px and pt), line_height, letter_spacing, and usage.
+
+Return EXACTLY this JSON shape (all keys required, do not omit):
 {
-  "brand_overview": { "mission_statement": "", "vision_statement": "", "brand_story": "", "core_values": [], "unique_value_proposition": "" },
-  "voice_and_tone": { "primary_tone": "", "secondary_tone": "", "communication_style": "", "personality_description": "", "dos": [], "donts": [], "sample_taglines": [], "sample_headlines": [], "sample_social_posts": [] },
-  "visual_identity": { "color_palette": { "primary": {"hex":"#000000","name":"","usage":""}, "secondary": {"hex":"#000000","name":"","usage":""}, "accent": {"hex":"#000000","name":"","usage":""}, "background": {"hex":"#000000","name":"","usage":""}, "text": {"hex":"#000000","name":"","usage":""} }, "typography": { "primary_font": "", "secondary_font": "", "heading_style": "", "body_style": "", "font_usage_rules": [] }, "logo_usage": { "clear_space_rule":"", "minimum_size":"", "approved_backgrounds":[], "forbidden_uses":[] }, "imagery_style": { "photography_direction":"", "illustration_style":"", "dos":[], "donts":[] } },
-  "target_audience": { "primary_persona": { "name":"", "age_range":"", "description":"", "pain_points":[], "goals":[], "preferred_channels":[] }, "secondary_persona": { "name":"", "age_range":"", "description":"" } },
-  "brand_positioning": { "positioning_statement":"", "competitive_differentiators":[], "market_category":"", "competitive_landscape_notes":"" },
-  "digital_guidelines": { "website_principles":[], "social_media_guidelines":{ "profile_bio_template":"", "hashtag_strategy":[], "posting_tone":"", "content_pillars":[] }, "email_guidelines":{ "subject_line_style":"", "greeting_style":"", "signature_template":"" } }
+  "brand_overview": {
+    "mission_statement": "",
+    "vision_statement": "",
+    "brand_story": "",
+    "brand_promise": "",
+    "core_values": [ { "name": "", "description": "" } ],
+    "unique_value_proposition": "",
+    "brand_pillars": [ { "name": "", "description": "" } ],
+    "elevator_pitch": ""
+  },
+  "voice_and_tone": {
+    "primary_tone": "",
+    "secondary_tone": "",
+    "communication_style": "",
+    "personality_description": "",
+    "personality_traits": [ { "trait": "", "description": "" } ],
+    "lexicon_we_use": [],
+    "lexicon_we_avoid": [],
+    "dos": [],
+    "donts": [],
+    "sample_taglines": [],
+    "sample_headlines": [],
+    "sample_social_posts": [],
+    "sample_email_intro": "",
+    "sample_about_paragraph": ""
+  },
+  "visual_identity": {
+    "color_palette": {
+      "primary":    { "hex":"#000000","name":"","rgb":{"r":0,"g":0,"b":0},"cmyk":{"c":0,"m":0,"y":0,"k":0},"pantone_suggestion":"","usage":"","psychology":"" },
+      "secondary":  { "hex":"#000000","name":"","rgb":{"r":0,"g":0,"b":0},"cmyk":{"c":0,"m":0,"y":0,"k":0},"pantone_suggestion":"","usage":"","psychology":"" },
+      "accent":     { "hex":"#000000","name":"","rgb":{"r":0,"g":0,"b":0},"cmyk":{"c":0,"m":0,"y":0,"k":0},"pantone_suggestion":"","usage":"","psychology":"" },
+      "background": { "hex":"#FFFFFF","name":"","rgb":{"r":255,"g":255,"b":255},"cmyk":{"c":0,"m":0,"y":0,"k":0},"pantone_suggestion":"","usage":"","psychology":"" },
+      "text":       { "hex":"#111111","name":"","rgb":{"r":17,"g":17,"b":17},"cmyk":{"c":0,"m":0,"y":0,"k":93},"pantone_suggestion":"","usage":"","psychology":"" }
+    },
+    "neutral_palette": [ { "hex":"#000000","name":"","usage":"" } ],
+    "color_usage_rules": [],
+    "color_combinations_recommended": [],
+    "color_combinations_avoid": [],
+    "typography": {
+      "primary_font": "",
+      "secondary_font": "",
+      "primary_font_rationale": "",
+      "secondary_font_rationale": "",
+      "heading_style": "",
+      "body_style": "",
+      "font_usage_rules": [],
+      "type_scale": [
+        { "level":"H1","font":"","weight":"","size_px":"","size_pt":"","line_height":"","letter_spacing":"","usage":"" }
+      ],
+      "font_pairings": []
+    },
+    "logo_usage": {
+      "construction_notes": "",
+      "clear_space_rule": "",
+      "minimum_size_digital": "",
+      "minimum_size_print": "",
+      "approved_backgrounds": [],
+      "forbidden_uses": [],
+      "logo_variations": [ { "name":"", "when_to_use":"" } ],
+      "co_branding_rules": ""
+    },
+    "imagery_style": {
+      "photography_direction": "",
+      "illustration_style": "",
+      "iconography_style": "",
+      "composition_principles": [],
+      "color_treatment": "",
+      "dos": [],
+      "donts": [],
+      "mood_keywords": []
+    }
+  },
+  "target_audience": {
+    "primary_persona": { "name":"", "age_range":"", "occupation":"", "description":"", "pain_points":[], "goals":[], "motivations":[], "preferred_channels":[], "buying_behavior":"" },
+    "secondary_persona": { "name":"", "age_range":"", "occupation":"", "description":"", "pain_points":[], "goals":[], "preferred_channels":[] }
+  },
+  "brand_positioning": {
+    "positioning_statement": "",
+    "category_definition": "",
+    "competitive_differentiators": [],
+    "market_category": "",
+    "competitive_landscape_notes": "",
+    "competitor_snapshot": [ { "name":"", "positioning":"", "how_we_differ":"" } ],
+    "messaging_pillars": [ { "pillar":"", "proof_points":[] } ],
+    "value_proposition_canvas": { "customer_jobs":[], "pains":[], "gains":[], "products_services":[], "pain_relievers":[], "gain_creators":[] }
+  },
+  "brand_applications": {
+    "digital": [],
+    "print": [],
+    "social_media": [],
+    "merchandise": [],
+    "environmental": [],
+    "packaging": []
+  },
+  "brand_dos_donts": {
+    "overall_dos": [],
+    "overall_donts": []
+  },
+  "accessibility": {
+    "contrast_principles": [],
+    "color_blind_considerations": [],
+    "type_legibility_rules": [],
+    "inclusive_language_rules": []
+  },
+  "digital_guidelines": {
+    "website_principles": [],
+    "social_media_guidelines": { "profile_bio_template":"", "hashtag_strategy":[], "posting_tone":"", "content_pillars":[], "posting_cadence":"" },
+    "email_guidelines": { "subject_line_style":"", "greeting_style":"", "signature_template":"", "sample_subject_lines":[] }
+  },
+  "implementation_roadmap": {
+    "phase_1_foundations": [],
+    "phase_2_rollout": [],
+    "phase_3_optimization": [],
+    "governance_notes": ""
+  }
 }`;
 
 function extractJson(text: string): unknown {
@@ -59,12 +179,22 @@ export const buildGuidelineContent = createServerFn({ method: "POST" })
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: SYSTEM },
-          { role: "user", content: `Generate the brand guideline JSON for this brand:\n${JSON.stringify(brief)}` },
+          {
+            role: "user",
+            content:
+              `Produce the complete agency-grade brand guideline JSON for the brand below. ` +
+              `Write with editorial confidence. Every section must be richly detailed, specific to this brand, ` +
+              `and decision-ready. Use the supplied colors and typography exactly when present; ` +
+              `infer plausible CMYK/RGB from HEX. Do NOT omit any keys from the schema.\n\n` +
+              `BRAND INPUT:\n${JSON.stringify(brief, null, 2)}`,
+          },
         ],
         response_format: { type: "json_object" },
+        temperature: 0.8,
+        max_tokens: 16000,
       }),
     });
 
