@@ -9,7 +9,7 @@ export function getAuthCallbackUrl() {
 
 export function rememberPostAuthRedirect(path = DASHBOARD_PATH) {
   try {
-    localStorage.setItem(POST_AUTH_REDIRECT_KEY, path);
+    localStorage.setItem(POST_AUTH_REDIRECT_KEY, safeRedirectPath(path));
   } catch { /* noop */ }
 }
 
@@ -17,7 +17,24 @@ export function consumePostAuthRedirect(fallback = DASHBOARD_PATH) {
   try {
     const redirectPath = localStorage.getItem(POST_AUTH_REDIRECT_KEY) ?? fallback;
     localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
-    return redirectPath;
+    return safeRedirectPath(redirectPath, fallback);
+  } catch {
+    return fallback;
+  }
+}
+
+export function clearPostAuthRedirect() {
+  try {
+    localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+  } catch { /* noop */ }
+}
+
+function safeRedirectPath(value: string, fallback = DASHBOARD_PATH) {
+  if (!value || value.startsWith("//")) return fallback;
+  try {
+    const url = new URL(value, typeof window === "undefined" ? "https://sync-ai-os.lovable.app" : window.location.origin);
+    if (typeof window !== "undefined" && url.origin !== window.location.origin) return fallback;
+    return `${url.pathname}${url.search}${url.hash}`;
   } catch {
     return fallback;
   }
