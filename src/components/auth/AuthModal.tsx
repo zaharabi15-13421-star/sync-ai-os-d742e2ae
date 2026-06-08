@@ -8,7 +8,7 @@ import { X, Sparkles, Mail, CheckCircle2, KeyRound, LockOpen, AlertCircle, Alert
 import { useEmailVerificationDetection } from "@/hooks/useEmailVerificationDetection";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { DASHBOARD_PATH, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
+import { clearPostAuthRedirect, DASHBOARD_PATH, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
 import {
   Label, FieldError, TextField, SelectField, PasswordField, PasswordRequirements,
   OTPInput, GoogleOAuthButton, AuthDivider, PrimaryButton, GhostButton,
@@ -327,6 +327,7 @@ function EntryScreen({
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
+        clearPostAuthRedirect();
         toast.error("Google sign-in failed", { description: result.error.message });
         setGoogleLoading(false);
         return;
@@ -336,6 +337,7 @@ function EntryScreen({
       onGoogleDone();
       await finishAuthenticatedRedirect();
     } catch (e) {
+      clearPostAuthRedirect();
       toast.error("Google sign-in failed", { description: e instanceof Error ? e.message : "Please try again." });
       setGoogleLoading(false);
     }
@@ -902,6 +904,7 @@ function LoginScreen({
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
+        clearPostAuthRedirect();
         toast.error("Google sign-in failed", { description: result.error.message });
         setGoogleLoading(false);
         return;
@@ -910,6 +913,7 @@ function LoginScreen({
       onGoogleDone();
       await finishAuthenticatedRedirect();
     } catch (e) {
+      clearPostAuthRedirect();
       toast.error("Google sign-in failed");
       setGoogleLoading(false);
     }
