@@ -126,6 +126,7 @@ export function useBrandGuidelineGen() {
       setStatus("generating");
       const initial = STEP_DEFS(opts.format);
       setSteps(initial);
+      let activeGenerationId: string | null = null;
 
       try {
         // 1. Create row + subscribe to realtime
@@ -133,6 +134,7 @@ export function useBrandGuidelineGen() {
           data: { brandSummaryId: opts.brandSummaryId, format: opts.format },
         })) as { id: string };
         const id = startRes.id;
+        activeGenerationId = id;
         setGenerationId(id);
 
         const { data: authUser } = await supabase.auth.getUser();
@@ -301,12 +303,12 @@ export function useBrandGuidelineGen() {
         setError(msg);
         setStatus("error");
         toast.error(msg);
-        if (generationId) {
-          try { await errFn({ data: { id: generationId, message: msg } }); } catch { /* noop */ }
+        if (activeGenerationId) {
+          try { await errFn({ data: { id: activeGenerationId, message: msg } }); } catch { /* noop */ }
         }
       }
     },
-    [advanceStep, buildFn, errFn, finalizeFn, generationId, reset, startFn, webBookFn],
+    [advanceStep, buildFn, errFn, finalizeFn, reset, startFn, webBookFn],
   );
 
   return { status, progress, steps, result, error, generationId, generate, reset };
