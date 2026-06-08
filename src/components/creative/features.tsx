@@ -766,6 +766,13 @@ export function ProductDescription() {
 }
 
 // =================== 3.1 THUMBNAIL GENERATOR ===================
+const THUMBNAIL_STYLES = [
+  { value: "Professional", description: "Clean and business-focused" },
+  { value: "Bold", description: "Eye-catching and attention-grabbing" },
+  { value: "Fun", description: "Playful and engaging" },
+  { value: "Minimal", description: "Simple and elegant" },
+] as const;
+
 export function ThumbnailGenerator() {
   const g = useGenerator();
   const [img, setImg] = useState<File | File[] | null>(null);
@@ -774,26 +781,62 @@ export function ThumbnailGenerator() {
   const [style, setStyle] = useState("Bold");
   const [color, setColor] = useState("#ef4444");
   const [ratio, setRatio] = useState("16:9");
+  const [suggesting, setSuggesting] = useState(false);
+
+  // AI-suggest headline + subheading when an image is uploaded
+  const onImage = async (v: File | File[] | null) => {
+    setImg(v);
+    const file = Array.isArray(v) ? v[0] : v;
+    if (!file || !file.type.startsWith("image/")) return;
+    setSuggesting(true);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      const { suggestThumbnailText } = await import("@/lib/creative.functions");
+      const sug = await suggestThumbnailText({ data: { imageDataUrl: dataUrl, topic: headline } });
+      if (sug?.headline) setHeadline(sug.headline);
+      if (sug?.subheading) setSub(sug.subheading);
+      toast.success("AI suggestions applied");
+    } catch (e) {
+      console.error("Thumbnail suggest failed", e);
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
   return (
     <FeatureShell title="Thumbnail Generator" subtitle="High-CTR YouTube thumbnails with overlay text"
       left={<>
         <Section title="Image">
-          <FileDrop value={img} onChange={setImg} label="Upload Your Product or Model Image" accept="image/jpeg,image/png,image/webp" />
+          <FileDrop value={img} onChange={onImage} label="Upload Your Product or Model Image" accept="image/jpeg,image/png,image/webp" />
         </Section>
         <Section title="Thumbnail Settings">
           <div>
-            <FieldLabel hint="AI will suggest from image">Headline</FieldLabel>
-            <Input value={headline} onChange={(e) => setHeadline(e.target.value)} className="bg-white/5 border-white/10" />
+            <FieldLabel hint={suggesting ? "AI analyzing image..." : "AI will suggest from image"}>Thumbnail Headline</FieldLabel>
+            <Input value={headline} onChange={(e) => setHeadline(e.target.value)} disabled={suggesting} className="bg-white/5 border-white/10" />
           </div>
           <div>
-            <FieldLabel hint="Auto-suggested">Subheading</FieldLabel>
-            <Input value={sub} onChange={(e) => setSub(e.target.value)} className="bg-white/5 border-white/10" />
+            <FieldLabel hint="Auto-suggested">Thumbnail Subheading</FieldLabel>
+            <Input value={sub} onChange={(e) => setSub(e.target.value)} disabled={suggesting} className="bg-white/5 border-white/10" />
           </div>
           <div>
-            <FieldLabel>Style</FieldLabel>
+            <FieldLabel>Thumbnail Style</FieldLabel>
             <Select value={style} onValueChange={setStyle}>
               <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
-              <SelectContent>{["Professional","Bold","Minimal","Cinematic","Viral","Gaming","Tech","Luxury","Educational","Fun"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                {THUMBNAIL_STYLES.map(s => (
+                  <SelectItem key={s.value} value={s.value}>
+                    <div className="flex flex-col items-start">
+                      <span className="text-sm font-medium text-foreground">{s.value}</span>
+                      <span className="text-[11px] text-muted-foreground">{s.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
           <div>
@@ -811,6 +854,7 @@ export function ThumbnailGenerator() {
             </Select>
           </div>
         </Section>
+
         <Button onClick={() => g.run("thumbnail", { prompt: `${headline} — ${sub}`, tone: "Bold", style, aspectRatio: ratio, extras: { headline, subheading: sub, brandColor: color } })} disabled={g.loading} className="w-full bg-gradient-to-r from-indigo-500 to-purple-600">
           <Sparkles className="h-4 w-4 mr-2" /> Generate Thumbnail
         </Button>
