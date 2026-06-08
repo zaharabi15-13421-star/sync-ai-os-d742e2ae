@@ -889,7 +889,7 @@ export function ThumbnailGenerator() {
           <Sparkles className="h-4 w-4 mr-2" /> Generate Thumbnail
         </Button>
       </>}
-      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={() => g.run("thumbnail", { prompt: `${headline} — ${sub}`, tone: "Bold", style, aspectRatio: ratio, extras: { headline, subheading: sub, brandColor: color } })} kind="image">
+      right={<OutputPanel loading={g.loading} generated={g.generated} onGenerate={() => g.run("thumbnail", { prompt: `${headline} — ${sub}`, tone: "Bold", style, aspectRatio: ratio, extras: { headline, subheading: sub, brandColor: color } })} kind="image" module={g.lastModule || "thumbnail"} imageUrl={g.output?.imageUrl}>
         {g.output?.imageUrl ? (
           <div className="aspect-video rounded-lg overflow-hidden border border-white/10 bg-black">
             <img src={g.output.imageUrl} alt={headline} className="w-full h-full object-cover" />
