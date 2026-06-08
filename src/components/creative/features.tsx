@@ -882,6 +882,12 @@ export function ThumbnailGenerator() {
 }
 
 // =================== 3.2 SCRIPT WRITER ===================
+const VIDEO_GOALS = [
+  "Educational", "Entertainment", "Promotional", "Tutorial",
+  "Brand Awareness", "Lead Generation", "Product Launch", "Customer Testimonial",
+  "Social Media Engagement", "Storytelling", "Event Promotion", "Training & Development",
+] as const;
+
 export function ScriptWriter() {
   const g = useGenerator();
   const [topic, setTopic] = useState("How AI is reshaping modern marketing teams");
@@ -891,7 +897,12 @@ export function ScriptWriter() {
   const [age, setAge] = useState("25-35");
   const [gender, setGender] = useState("All");
   const [lang, setLang] = useState("English");
+  const [videoGoal, setVideoGoal] = useState<string>("");
+  const [customGoals, setCustomGoals] = useState<string[]>([]);
+  const [showCustom, setShowCustom] = useState(false);
+  const [customInput, setCustomInput] = useState("");
   const wordCount = Math.round(duration[0] * 150);
+  const goalOptions = [...VIDEO_GOALS, ...customGoals];
 
   const handleGenerate = () => {
     g.run("script", {
@@ -900,7 +911,17 @@ export function ScriptWriter() {
       audience,
       tone,
       language: lang,
-    });
+      description: videoGoal ? `Video goal: ${videoGoal}.` : undefined,
+    } as any);
+  };
+
+  const addCustomGoal = () => {
+    const v = customInput.trim();
+    if (!v) return;
+    if (!customGoals.includes(v) && !VIDEO_GOALS.includes(v as any)) setCustomGoals([...customGoals, v]);
+    setVideoGoal(v);
+    setCustomInput("");
+    setShowCustom(false);
   };
 
   const script = g.output?.script;
@@ -909,7 +930,35 @@ export function ScriptWriter() {
     <FeatureShell title="Smart Script Writer" subtitle="Structured YouTube scripts — Hook, Intro, Body, CTA, Outro"
       left={<>
         <Section title="Concept">
-          <PromptInput value={topic} onChange={setTopic} tone={tone} onToneChange={setTone} label="Video Topic / Product" />
+          <PromptInput value={topic} onChange={setTopic} tone={tone} onToneChange={setTone}
+            label="Video Topic / Product"
+            placeholder="e.g. How AI is revolutionizing modern marketing — share your expertise" />
+        </Section>
+        <Section title="Video Goal">
+          <Select value={videoGoal} onValueChange={setVideoGoal}>
+            <SelectTrigger className="bg-white/5 border-white/10">
+              <SelectValue placeholder="Select your video goal..." />
+            </SelectTrigger>
+            <SelectContent>
+              {goalOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {!showCustom ? (
+            <button type="button" onClick={() => setShowCustom(true)}
+              className="text-[11px] text-indigo-300 hover:text-indigo-200 mt-1">
+              + Add custom goal
+            </button>
+          ) : (
+            <div className="flex gap-1.5 mt-1">
+              <Input value={customInput} onChange={(e) => setCustomInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomGoal(); } }}
+                placeholder="Type your custom video goal..." className="h-8 text-xs bg-white/5 border-white/10" autoFocus />
+              <Button size="sm" className="h-8" onClick={addCustomGoal}>Add</Button>
+              <Button size="sm" variant="ghost" className="h-8" onClick={() => { setShowCustom(false); setCustomInput(""); }}>
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
         </Section>
         <Section title="Video Length">
           <div className="flex items-center justify-between text-xs mb-1">
@@ -921,6 +970,7 @@ export function ScriptWriter() {
             {[1,2,3,5,7,10].map(t => <span key={t}>{t}m</span>)}
           </div>
         </Section>
+
         <Section title="Audience">
           <div>
             <FieldLabel>Audience Type</FieldLabel>
