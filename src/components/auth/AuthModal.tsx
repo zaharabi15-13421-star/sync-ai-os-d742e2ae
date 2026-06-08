@@ -9,6 +9,7 @@ import { useEmailVerificationDetection } from "@/hooks/useEmailVerificationDetec
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { clearPostAuthRedirect, DASHBOARD_PATH, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
+import { redirectToAuthenticatedDestination } from "@/lib/auth-session";
 import {
   Label, FieldError, TextField, SelectField, PasswordField, PasswordRequirements,
   OTPInput, GoogleOAuthButton, AuthDivider, PrimaryButton, GhostButton,
@@ -17,7 +18,7 @@ import { scorePassword } from "@/utils/passwordScorer";
 import { EMAIL_REGEX, normalizeUrl, sanitizeText } from "@/utils/validators";
 import {
   registerUser, recordLoginFailure, clearLoginAttempts,
-  checkLoginLockout, markEmailVerified, requestPasswordReset, logAuthEventFn,
+  checkLoginLockout, requestPasswordReset, logAuthEventFn,
 } from "@/lib/auth-flow.functions";
 import { useEmailValidation, type EmailState } from "@/hooks/useEmailValidation";
 import { INDUSTRIES, TEAM_SIZES, type AuthScreen, type AuthTab, type RegistrationErrors, type RegistrationFormValues } from "@/types/auth";
@@ -163,11 +164,12 @@ interface AuthModalProps {
 }
 
 async function finishAuthenticatedRedirect() {
-  // Best-effort: prefer an existing session immediately; otherwise just go.
-  // The destination route's auth guard will pick up the session as soon as
-  // the supabase client surfaces it.
   rememberPostAuthRedirect();
-  window.location.assign(DASHBOARD_PATH);
+  const result = await redirectToAuthenticatedDestination();
+  if (!result.ok) {
+    clearPostAuthRedirect();
+    toast.error("Sign-in was not completed. Please try again.");
+  }
 }
 
 export function AuthModal({ open, onOpenChange, initialTab = "signup" }: AuthModalProps) {
@@ -943,7 +945,7 @@ function LoginScreen({
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.toLowerCase(), password });
       if (error) throw error;
-      await clearAttempts({ data: { email: email.toLowerCase() } });
+      void clearAttempts({ data: { email: email.toLowerCase() } }).catch(() => undefined);
       logAuthEventFn({
         data: { eventType: "login_success", metadata: { remember_me: remember } },
       }).catch(() => {});
