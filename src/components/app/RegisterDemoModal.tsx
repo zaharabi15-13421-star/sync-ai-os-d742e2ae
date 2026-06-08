@@ -10,6 +10,7 @@ import { Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { DASHBOARD_PATH, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
 
 const INDUSTRIES = [
   "Technology / SaaS", "E-commerce / D2C", "Retail", "Fashion & Beauty", "Food & Beverage",
@@ -43,11 +44,8 @@ function GoogleIcon({ className = "h-4 w-4" }) {
 
 type Mode = "choose" | "create" | "login" | "success";
 
-const POST_AUTH_REDIRECT_KEY = "brandsync_post_auth_redirect";
-const DASHBOARD_PATH = "/dashboard/intelligence";
-
 async function finishAuthenticatedRedirect() {
-  localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
+  rememberPostAuthRedirect();
 
   for (let i = 0; i < 8; i += 1) {
     const { data } = await supabase.auth.getSession();
@@ -58,13 +56,7 @@ async function finishAuthenticatedRedirect() {
     await new Promise((resolve) => setTimeout(resolve, 125));
   }
 
-  localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
   toast.error("Sign-in was not completed. Please try again.");
-}
-
-function getGoogleSignInRedirectOrigin() {
-  if (typeof window === "undefined") return "";
-  return window.location.origin;
 }
 
 export function RegisterDemoModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
@@ -80,13 +72,12 @@ export function RegisterDemoModal({ open, onOpenChange }: { open: boolean; onOpe
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
-      localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
+      rememberPostAuthRedirect();
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: getGoogleSignInRedirectOrigin(),
+        redirect_uri: getAuthCallbackUrl(),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
-        localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
         toast.error("Google sign-in failed", {
           description: result.error.message ?? "Please try again or use email login.",
         });
@@ -98,7 +89,6 @@ export function RegisterDemoModal({ open, onOpenChange }: { open: boolean; onOpe
       toast.success("Welcome to BrandSync AI!");
       await finishAuthenticatedRedirect();
     } catch (e) {
-      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.error("Google sign-in failed", {
         description: e instanceof Error ? e.message : "Please try again or use email login.",
       });
@@ -194,7 +184,7 @@ function CreateForm({ onBack, onDone }: { onBack: () => void; onDone: () => void
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: getAuthCallbackUrl(),
         data: {
           brand_name: parsed.data.brandName,
           industry: parsed.data.industry,
