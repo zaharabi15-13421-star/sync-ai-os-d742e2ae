@@ -911,9 +911,10 @@ export function ScriptWriter() {
       audience,
       tone,
       language: lang,
-      description: videoGoal ? `Video goal: ${videoGoal}.` : undefined,
-    } as any);
+      videoGoal: videoGoal || undefined,
+    });
   };
+
 
   const addCustomGoal = () => {
     const v = customInput.trim();
