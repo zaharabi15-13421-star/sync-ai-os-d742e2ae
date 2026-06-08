@@ -505,8 +505,8 @@ export function BlogPilot() {
             value={desc} onChange={setDesc} rows={4}
             label="Topic Description & Context"
             placeholder="Describe your blog topic, key points to cover, target audience, or paste a URL for reference. You can also upload files or images for context..."
-            tone={undefined as any}
           />
+
         </Section>
 
         <Button onClick={handleGenerate} disabled={g.loading} className="w-full bg-gradient-to-r from-indigo-500 to-purple-600">
