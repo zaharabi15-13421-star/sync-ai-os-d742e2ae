@@ -568,8 +568,8 @@ export async function generatePDF(content: BrandContent, inputs: BrandInputs): P
 
   /* fill TOC page */
   doc.setPage(tocPageIndex);
-  doc.setFillColor(255); doc.rect(0, 0, W, H, "F");
-  doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(20);
+  doc.setFillColor(255, 255, 255); doc.rect(0, 0, W, H, "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(20, 20, 20);
   doc.text("Contents", M, 40);
   doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.6); doc.line(M, 44, M + 30, 44);
   doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(60);
