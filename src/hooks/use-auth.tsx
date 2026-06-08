@@ -71,9 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
 
       if (userId !== lastEnsuredUserId.current) {
-        lastEnsuredUserId.current = userId;
         void ensureWorkspaceWithRetry()
-          .then(() => finish(true))
+          .then(() => {
+            lastEnsuredUserId.current = userId;
+            finish(true);
+          })
           .catch((error) => {
             lastEnsuredUserId.current = null;
             setWorkspaceReady(false);
