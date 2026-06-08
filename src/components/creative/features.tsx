@@ -320,10 +320,18 @@ export function ProductHolography() {
     <FeatureShell title="Product Holography" subtitle="Convert product photos into futuristic 3D-style holograms"
       left={<>
         <Section title="Product">
-          <FileDrop value={img} onChange={setImg} label="Upload Your Product or Model Image" />
+          <FileDrop
+            value={img} onChange={setImg}
+            accept="image/png,image/jpeg,image/webp"
+            label="Upload a clear product photo"
+            hint="Clean shot with white or transparent background works best · PNG preferred · Max 10MB"
+          />
           <PromptInput value={prompt} onChange={setPrompt} tone={tone} onToneChange={setTone}
+            label="Describe Your Hologram Effect"
+            placeholder="e.g. Floating 3D hologram with electric blue neon rings, rotating on a dark glossy surface, cinematic product showcase"
             attachments={atts} onAttachmentsChange={setAtts} />
         </Section>
+
         <Section title="Product Labels" right={
           <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={labels.length >= 5}
             onClick={() => setLabels([...labels, { text: "", position: "Top" }])}>
