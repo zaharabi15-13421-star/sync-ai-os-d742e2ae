@@ -32,6 +32,11 @@ import {
 } from "@/lib/website-intelligence.functions";
 import { BrandDetailsTab } from "@/components/brand-details/BrandDetailsTab";
 import { EditableBrandSummary } from "@/components/brand-summary/EditableBrandSummary";
+import { FormatSelector, type GuidelineFormat } from "@/components/brand-guideline/FormatSelector";
+import { GenerateCTAButton } from "@/components/brand-guideline/GenerateCTAButton";
+import { GenerationPanel } from "@/components/brand-guideline/GenerationPanel";
+import { useBrandGuidelineGen } from "@/hooks/useBrandGuidelineGen";
+import { useBrandSummary } from "@/hooks/useBrandSummary";
 
 export const Route = createFileRoute("/dashboard/website-analysis")({
   component: WebsiteIntelligencePage,
@@ -67,6 +72,25 @@ function ensureUrl(d: string) {
 function WebsiteIntelligencePage() {
   const [tab, setTab] = useState<"brand" | "details" | "seo">("brand");
   const [sharedUrl, setSharedUrl] = useState("");
+  const [format, setFormat] = useState<GuidelineFormat>("pdf");
+
+  const { query: bsQuery } = useBrandSummary();
+  const brandSummary = bsQuery.data?.data;
+  const hasSummary = !!(brandSummary?.id && brandSummary?.brand_name);
+
+  const gen = useBrandGuidelineGen();
+
+  const handleGenerate = () => {
+    if (!brandSummary?.id) {
+      toast.error("Run a Brand Summary analysis first to generate your guideline");
+      return;
+    }
+    gen.generate({
+      brandSummaryId: brandSummary.id,
+      format,
+      brandSummary,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -83,38 +107,92 @@ function WebsiteIntelligencePage() {
         </p>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "brand" | "details" | "seo")} className="w-full">
-        <TabsList className="bg-white/[0.04] border border-white/10 p-1 rounded-full">
-          <TabsTrigger
-            value="brand"
-            className="rounded-full px-5 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+      {/* Two-column layout: tabs (left) + generation panel (right) */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        <div className="w-full lg:w-[55%] lg:min-w-[480px] flex flex-col gap-4">
+          <div
+            className="rounded-2xl overflow-hidden flex flex-col"
+            style={{
+              background: "#0F0F1A",
+              border: "0.5px solid #1E1E35",
+              height: "calc(100vh - 280px)",
+              minHeight: 600,
+              maxHeight: 900,
+            }}
           >
-            Brand Summary
-          </TabsTrigger>
-          <TabsTrigger
-            value="details"
-            className="rounded-full px-5 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-          >
-            Brand Details
-          </TabsTrigger>
-          <TabsTrigger
-            value="seo"
-            className="rounded-full px-5 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-          >
-            Dynamic SEO Keyword Tracker
-          </TabsTrigger>
-        </TabsList>
+            <Tabs
+              value={tab}
+              onValueChange={(v) => setTab(v as "brand" | "details" | "seo")}
+              className="w-full flex flex-col flex-1 min-h-0"
+            >
+              <div
+                className="sticky top-0 z-10 px-5 py-3"
+                style={{ background: "#0F0F1A", borderBottom: "0.5px solid #1E1E35" }}
+              >
+                <TabsList className="bg-white/[0.04] border border-white/10 p-1 rounded-full">
+                  <TabsTrigger
+                    value="brand"
+                    className="rounded-full px-5 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                  >
+                    Brand Summary
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="details"
+                    className="rounded-full px-5 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                  >
+                    Brand Details
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="seo"
+                    className="rounded-full px-5 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                  >
+                    Dynamic SEO Keyword Tracker
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 py-5 bgg-scroll">
+                <TabsContent value="brand" className="mt-0">
+                  <BrandSummaryTab sharedUrl={sharedUrl} setSharedUrl={setSharedUrl} />
+                </TabsContent>
+                <TabsContent value="details" className="mt-0">
+                  <BrandDetailsTab />
+                </TabsContent>
+                <TabsContent value="seo" className="mt-0">
+                  <SeoTrackerTab sharedUrl={sharedUrl} setSharedUrl={setSharedUrl} />
+                </TabsContent>
+              </div>
+            </Tabs>
+          </div>
 
-        <TabsContent value="brand" className="mt-6">
-          <BrandSummaryTab sharedUrl={sharedUrl} setSharedUrl={setSharedUrl} />
-        </TabsContent>
-        <TabsContent value="details" className="mt-6">
-          <BrandDetailsTab />
-        </TabsContent>
-        <TabsContent value="seo" className="mt-6">
-          <SeoTrackerTab sharedUrl={sharedUrl} setSharedUrl={setSharedUrl} />
-        </TabsContent>
-      </Tabs>
+          <FormatSelector value={format} onChange={setFormat} />
+          <GenerateCTAButton
+            format={format}
+            disabled={!hasSummary}
+            loading={gen.status === "generating"}
+            disabledReason="Run a Brand Summary analysis first to generate your guideline"
+            onClick={handleGenerate}
+          />
+        </div>
+
+        <div className="w-full lg:w-[45%] lg:min-w-[380px]">
+          <GenerationPanel
+            status={gen.status}
+            progress={gen.progress}
+            steps={gen.steps}
+            format={format}
+            result={gen.result}
+            brandSummary={brandSummary}
+            onReset={gen.reset}
+          />
+        </div>
+      </div>
+
+      <style>{`
+        .bgg-scroll::-webkit-scrollbar { width: 5px; }
+        .bgg-scroll::-webkit-scrollbar-track { background: transparent; }
+        .bgg-scroll::-webkit-scrollbar-thumb { background: #1E1E35; border-radius: 10px; }
+        .bgg-scroll::-webkit-scrollbar-thumb:hover { background: #7C3AED; }
+      `}</style>
     </div>
   );
 }
