@@ -202,8 +202,8 @@ export function useBrandGuidelineGen() {
         cur = await advanceStep(id, 6, cur);
         const buildRes = (await buildFn({
           data: { brandSummaryId: opts.brandSummaryId },
-        })) as { content: any; brandSummary: any };
-        const content = buildRes.content;
+        })) as { contentJson: string; brandSummaryJson: string };
+        const content = JSON.parse(buildRes.contentJson);
         cur = cur.map((s, i) =>
           i === 6
             ? { ...s, preview: `${content?.voice_and_tone?.sample_taglines?.length || 3} messaging pillars · ${content?.brand_overview?.core_values?.length || 5} strategic recommendations generated` }
