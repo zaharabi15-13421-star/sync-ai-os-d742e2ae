@@ -3,6 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureAuthWorkspace } from "@/lib/auth.functions";
+import { finalizeAuthSessionFromUrl, hasAuthParamsInUrl } from "@/lib/auth-session";
 
 type AuthCtx = {
   session: Session | null;
@@ -43,9 +44,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       applySession(s);
     });
 
-    // Then hydrate the current session.
-    supabase.auth.getSession()
-      .then(({ data }) => applySession(data.session))
+    // Then hydrate the current session. If an auth provider returned tokens to
+    // the current URL, finalize them before the app decides the visitor is a guest.
+    const hydrate = hasAuthParamsInUrl()
+      ? finalizeAuthSessionFromUrl().then(({ session }) => session)
+      : supabase.auth.getSession().then(({ data }) => data.session);
+
+    hydrate
+      .then((s) => applySession(s))
       .catch((error) => {
         console.error("[auth] session bootstrap failed", error);
         if (mounted) setLoading(false);
