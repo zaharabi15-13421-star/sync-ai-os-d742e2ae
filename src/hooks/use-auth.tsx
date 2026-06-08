@@ -9,10 +9,17 @@ type AuthCtx = {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  workspaceReady: boolean;
   signOut: () => Promise<void>;
 };
 
-const Ctx = createContext<AuthCtx>({ session: null, user: null, loading: true, signOut: async () => {} });
+const Ctx = createContext<AuthCtx>({
+  session: null,
+  user: null,
+  loading: true,
+  workspaceReady: false,
+  signOut: async () => {},
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const ensureWorkspace = useServerFn(ensureAuthWorkspace);
@@ -22,22 +29,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [workspaceReady, setWorkspaceReady] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     let hydrated = false;
+    let runId = 0;
 
     const applySession = (s: Session | null) => {
       if (!mounted) return;
+      const currentRun = ++runId;
       setSession(s);
-      setLoading(false);
       const userId = s?.user?.id ?? null;
-      if (userId && userId !== lastEnsuredUserId.current) {
-        lastEnsuredUserId.current = userId;
-        void ensureWorkspaceRef.current().catch((error) => {
-          console.error("[auth] workspace bootstrap failed", error);
-        });
+      if (!userId) {
+        lastEnsuredUserId.current = null;
+        setWorkspaceReady(false);
+        setLoading(false);
+        return;
       }
+
+      setLoading(true);
+
+      const finish = (ready: boolean) => {
+        if (!mounted || currentRun !== runId) return;
+        setWorkspaceReady(ready);
+        setLoading(false);
+      };
+
+      if (userId !== lastEnsuredUserId.current) {
+        lastEnsuredUserId.current = userId;
+        void ensureWorkspaceRef.current()
+          .then(() => finish(true))
+          .catch((error) => {
+            lastEnsuredUserId.current = null;
+            setWorkspaceReady(false);
+            console.error("[auth] workspace bootstrap failed", error);
+            finish(false);
+          });
+        return;
+      }
+
+      finish(true);
     };
 
     // Subscribe FIRST so we don't miss SIGNED_IN events.
@@ -78,9 +110,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     lastEnsuredUserId.current = null;
+    setWorkspaceReady(false);
   };
 
-  return <Ctx.Provider value={{ session, user: session?.user ?? null, loading, signOut }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={{ session, user: session?.user ?? null, loading, workspaceReady, signOut }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export const useAuth = () => useContext(Ctx);
