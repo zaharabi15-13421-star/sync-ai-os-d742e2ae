@@ -593,8 +593,20 @@ export function SearchSelect({ value, onChange, options, placeholder = "Select..
 }
 
 // ====== Output panel ======
+type HistoryItem = {
+  id: string;
+  module: string;
+  output_type: string;
+  output_content: string | null;
+  output_image_url: string | null;
+  prompt_used: string | null;
+  quality_score: number | null;
+  created_at: string;
+};
+
 export function OutputPanel({
   loading, generated, onGenerate, children, kind = "content", contentForCritique = "",
+  module: moduleId, imageUrl, textContent,
 }: {
   loading: boolean;
   generated: boolean;
@@ -602,25 +614,75 @@ export function OutputPanel({
   children?: ReactNode;
   kind?: "image" | "content" | "text";
   contentForCritique?: string;
+  module?: string;
+  imageUrl?: string;
+  textContent?: string;
 }) {
   const [tab, setTab] = useState("v1");
   const [critique, setCritique] = useState<Awaited<ReturnType<typeof critiqueContent>> | null>(null);
-  const [loadingCritique, setLoadingCritique] = useState(false);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [historyTick, setHistoryTick] = useState(0);
 
   useEffect(() => {
     if (generated && contentForCritique && kind !== "image") {
-      setLoadingCritique(true);
       critiqueContent({ data: { content: contentForCritique } })
         .then(setCritique)
         .catch((error) => {
           console.error("Critique failed:", error);
           setCritique(null);
-        })
-        .finally(() => setLoadingCritique(false));
+        });
     } else {
       setCritique(null);
     }
   }, [generated, contentForCritique, kind]);
+
+  // Refresh history shortly after a generation completes
+  useEffect(() => {
+    if (!moduleId) return;
+    if (generated) {
+      const t = setTimeout(() => setHistoryTick((n) => n + 1), 600);
+      return () => clearTimeout(t);
+    }
+  }, [generated, moduleId]);
+
+  useEffect(() => {
+    if (!moduleId) return;
+    listGenerations({ data: { module: moduleId, limit: 3 } })
+      .then((r) => setHistory((r.items as HistoryItem[]) ?? []))
+      .catch(() => setHistory([]));
+  }, [moduleId, historyTick]);
+
+  const handleCopy = async () => {
+    const text = textContent || contentForCritique || imageUrl || "";
+    if (!text) { toast.error("Nothing to copy yet"); return; }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
+  const handleDownload = () => {
+    if (imageUrl) {
+      const a = document.createElement("a");
+      a.href = imageUrl;
+      a.download = `${moduleId || "creative"}-${Date.now()}.png`;
+      a.click();
+      toast.success("Download started");
+      return;
+    }
+    const text = textContent || contentForCritique;
+    if (!text) { toast.error("Nothing to download yet"); return; }
+    const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${moduleId || "creative"}-${Date.now()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Download started");
+  };
 
   return (
     <div className="space-y-3 sticky top-4">
@@ -633,14 +695,11 @@ export function OutputPanel({
           </TabsList>
         </Tabs>
         <div className="flex flex-wrap gap-1.5">
-          <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={!generated} onClick={() => { navigator.clipboard.writeText("Generated content"); toast.success("Copied"); }}>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={!generated} onClick={handleCopy}>
             <Copy className="h-3 w-3 mr-1" /> Copy
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={!generated} onClick={() => toast.success("Download started")}>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={!generated} onClick={handleDownload}>
             <Download className="h-3 w-3 mr-1" /> Download
-          </Button>
-          <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={!generated} onClick={() => toast.success("Enhanced")}>
-            <Sparkles className="h-3 w-3 mr-1" /> Enhance
           </Button>
           <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={!generated} onClick={() => toast.success("Sent to Campaigns")}>
             <Send className="h-3 w-3 mr-1" /> Campaigns
@@ -681,6 +740,28 @@ export function OutputPanel({
         </AnimatePresence>
       </div>
 
+      {moduleId && history.length > 0 && (
+        <div className="glass rounded-xl p-3">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Recent Generations</div>
+          <div className="grid grid-cols-3 gap-2">
+            {history.map((h) => (
+              <div key={h.id} className="rounded-lg border border-white/10 bg-white/5 overflow-hidden hover:border-indigo-400/40 transition-colors">
+                {h.output_image_url ? (
+                  <img src={h.output_image_url} alt="" className="w-full aspect-square object-cover" />
+                ) : (
+                  <div className="aspect-square p-2 text-[10px] text-foreground/70 overflow-hidden">
+                    <div className="line-clamp-6 leading-snug">{h.output_content || h.prompt_used || "—"}</div>
+                  </div>
+                )}
+                <div className="px-2 py-1 text-[9px] text-muted-foreground border-t border-white/10">
+                  {new Date(h.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {critique && (
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-indigo-300 mb-2">
@@ -700,6 +781,7 @@ export function OutputPanel({
     </div>
   );
 }
+
 
 function Stat({ label, value, sub, good }: { label: string; value: string; sub?: string; good?: boolean }) {
   return (
