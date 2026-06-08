@@ -281,16 +281,16 @@ export function useBrandGuidelineGen() {
             fileSizeBytes: blob?.size ?? null,
             sectionsCount: 11,
           },
-        })) as { generation: any };
+        })) as { fileUrl: string | null; storagePath: string | null; sectionsCount: number };
 
         setProgress(100);
         setResult({
           format: opts.format,
-          fileUrl: finalRes.generation?.file_url ?? undefined,
+          fileUrl: finalRes.fileUrl ?? undefined,
           webBookSlug: webBookSlug ?? undefined,
           blob,
           fileName,
-          sectionsCount: 11,
+          sectionsCount: finalRes.sectionsCount ?? 11,
           content,
         });
         setStatus("complete");
