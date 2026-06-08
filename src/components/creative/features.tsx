@@ -726,7 +726,10 @@ export function ProductDescription() {
       left={<>
         <Section title="Product">
           <div><FieldLabel>Product Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} className="bg-white/5 border-white/10" /></div>
-          <PromptInput value={desc} onChange={setDesc} tone={tone} onToneChange={setTone} label="Short Description" rows={3} />
+          <PromptInput value={desc} onChange={setDesc} tone={tone} onToneChange={setTone}
+            label="Key Product Information"
+            placeholder="Describe your product's main features, target customer, key benefits, and what makes it unique..."
+            rows={3} />
         </Section>
         <Section title="Output">
           <div>
@@ -736,7 +739,8 @@ export function ProductDescription() {
               <SelectContent>{["Short (300-500)", "Medium (600-1000)", "Standard (1000-1500)", "Long-Form (1500-2500)"].map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <SeoKeywordPicker value={keywords} onChange={setKeywords} />
+          <SeoKeywordPicker value={keywords} onChange={setKeywords} language={lang} />
+
           <div>
             <FieldLabel>Style</FieldLabel>
             <Select value={style} onValueChange={setStyle}>
