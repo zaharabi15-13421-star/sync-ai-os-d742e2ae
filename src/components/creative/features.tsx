@@ -271,15 +271,28 @@ export function VirtualTryOn() {
     <FeatureShell title="Virtual Try-On" subtitle="Fit garments and accessories on a model image"
       left={<>
         <Section title="Inputs">
-          <FileDrop value={person} onChange={setPerson} label="Person Image" hint="Clear full-body photo" />
-          <FileDrop value={assets} onChange={setAssets} multiple label="Assets (max 5)" hint="Clothing / shoes / accessories" />
+          <FileDrop
+            value={person} onChange={setPerson}
+            accept="image/jpeg,image/png,image/webp"
+            label="Upload a clear full-body photo of a person"
+            hint="Front-facing with neutral background works best · JPG/PNG · Max 10MB"
+          />
+          <FileDrop
+            value={assets} onChange={setAssets} multiple
+            accept="image/jpeg,image/png,image/webp"
+            label="Upload Clothing & Accessories (up to 5 items)"
+            hint="Clothing, shoes, accessories, bags — clear product photos · JPG/PNG · Max 5MB each"
+          />
         </Section>
         <Section title="Brief">
           <PromptInput value={prompt} onChange={setPrompt} tone={tone} onToneChange={setTone}
+            label="Describe Your Try-On Scene"
+            placeholder="Setting, lighting, mood — e.g. outdoor catalog shot, natural daylight, magazine quality"
             attachments={atts} onAttachmentsChange={setAtts} />
           <PlatformSelect value={platforms} onChange={setPlatforms} />
           <AspectRatioPicker value={ratio} onChange={setRatio} />
         </Section>
+
         <Button onClick={runGen} disabled={g.loading} className="w-full bg-gradient-to-r from-indigo-500 to-purple-600">
           <Sparkles className="h-4 w-4 mr-2" /> Generate Self Model
         </Button>
