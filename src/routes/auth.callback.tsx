@@ -4,9 +4,8 @@ import { motion } from "framer-motion";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AUTH_BROADCAST_CHANNEL } from "@/hooks/useEmailVerificationDetection";
+import { DASHBOARD_PATH, consumePostAuthRedirect } from "@/lib/auth-redirects";
 
-const POST_AUTH_REDIRECT_KEY = "brandsync_post_auth_redirect";
-const DASHBOARD_PATH = "/dashboard/intelligence";
 const AUTO_REDIRECT_MS = 2500;
 
 type CallbackState = "processing" | "success";
@@ -37,9 +36,7 @@ function AuthCallback() {
     };
 
     const goToDashboard = () => {
-      const redirectPath = localStorage.getItem(POST_AUTH_REDIRECT_KEY) ?? DASHBOARD_PATH;
-      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
-      window.location.replace(redirectPath);
+      window.location.replace(consumePostAuthRedirect());
     };
 
     const goHome = () => {
