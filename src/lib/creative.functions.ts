@@ -199,10 +199,12 @@ export const generateScript = createServerFn({ method: "POST" })
       audience: z.array(z.string()).default([]),
       tone: z.string().default("Energetic"),
       language: z.string().default("English"),
+      videoGoal: z.string().optional(),
+      description: z.string().optional(),
     }).parse(data);
   })
   .handler(async ({ data }) => {
-    const { topic, duration, audience, tone, language } = data;
+    const { topic, duration, audience, tone, language, videoGoal, description } = data;
 
     const result = await generateObject({
       model: googleModel(),
@@ -216,6 +218,8 @@ export const generateScript = createServerFn({ method: "POST" })
       prompt: `Create a YouTube script in ${language} for a ${duration}-minute video.
 
 Topic: ${topic}
+${videoGoal ? `Video Goal: ${videoGoal}` : ""}
+${description ? `Additional Context: ${description}` : ""}
 Target Audience: ${audience.join(", ") || "General"}
 Tone: ${tone}
 
@@ -223,6 +227,7 @@ Structure the script with:
 1. HOOK (0:00-0:15): Attention-grabbing opening
 2. INTRO (0:15-0:45): Who you are and what this video covers
 3. BODY (0:45-End-1:00): Main content with key points
+
 4. CTA (End-1:00-End-0:30): Call to action
 5. OUTRO (End-0:30-End): Sign off
 
@@ -424,7 +429,8 @@ Return ONLY valid JSON - no markdown, no explanation.`,
   });
 
 /**
- * Generate SEO keywords
+ * Generate SEO keyword suggestions with volume / difficulty / intent.
+ * 7-day server cache via public.seo_keyword_cache.
  */
 export const generateSeoKeywords = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -432,38 +438,108 @@ export const generateSeoKeywords = createServerFn({ method: "POST" })
     return z.object({
       query: z.string().min(1, "Query is required"),
       count: z.coerce.number().min(5).max(20).default(10),
+      language: z.string().default("English"),
+      industry: z.string().optional(),
     }).parse(data);
   })
-  .handler(async ({ data }) => {
-    const { query, count } = data;
+  .handler(async ({ data, context }) => {
+    const { query, count, language, industry } = data;
+    const seed = query.trim().toLowerCase();
 
+    // 1) Cache lookup
+    const { data: cached } = await context.supabase
+      .from("seo_keyword_cache")
+      .select("suggestions, expires_at")
+      .eq("seed_keyword", seed)
+      .eq("language", language.slice(0, 12))
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (cached?.suggestions) {
+      const arr = cached.suggestions as Array<{ keyword: string; volume: string; difficulty: string; intent: string }>;
+      // Back-compat shape used by SeoKeywordPicker
+      return {
+        keywords: arr.map((k) => ({
+          keyword: k.keyword,
+          volume: k.volume,
+          difficulty: k.difficulty,
+          intent: k.intent,
+          competition: k.difficulty, // legacy
+        })),
+      };
+    }
+
+    // 2) Generate via Gemini
     const result = await generateObject({
       model: googleModel(),
       schema: z.object({
         keywords: z.array(
           z.object({
             keyword: z.string(),
-            volume: z.number(),
-            competition: z.enum(["Low", "Medium", "High"]),
-          })
-        ),
+            volume: z.enum(["High", "Medium", "Low"]),
+            difficulty: z.enum(["Easy", "Medium", "Hard"]),
+            intent: z.enum(["Informational", "Commercial", "Transactional", "Navigational"]),
+          }),
+        ).min(1),
       }),
-      prompt: `Generate ${count} SEO keyword variations for: "${query}"
+      prompt: `Generate ${count} SEO keyword variations for seed "${query}"${industry ? ` in the ${industry} industry` : ""} for the ${language} market.
 
-For each keyword, provide:
-- The keyword phrase
-- Estimated monthly search volume (rough number)
-- Competition level (Low/Medium/High)
+For each keyword return:
+- keyword: the full keyword phrase (2-6 words, naturally search-worthy)
+- volume: estimated monthly search volume bucket — High / Medium / Low
+- difficulty: ranking difficulty — Easy / Medium / Hard
+- intent: search intent — Informational / Commercial / Transactional / Navigational
 
-Return realistic SEO data for content optimization. Return ONLY valid JSON - no markdown.`,
+Return realistic data a content team would trust. Return ONLY valid JSON.`,
     });
 
+    // 3) Persist cache (fire-and-forget; ignore errors)
+    try {
+      await context.supabase.from("seo_keyword_cache").insert({
+        seed_keyword: seed,
+        language: language.slice(0, 12),
+        suggestions: result.object.keywords,
+      });
+    } catch { /* ignore */ }
+
     return {
-      keywords: result.object.keywords,
+      keywords: result.object.keywords.map((k) => ({
+        ...k,
+        competition: k.difficulty, // legacy alias
+      })),
     };
   });
 
-// Additional placeholder functions for poster and thumbnail
+/**
+ * Suggest thumbnail headline + subheading from an image (or topic).
+ * Used by Thumbnail Generator when a user uploads an image.
+ */
+export const suggestThumbnailText = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({
+    topic: z.string().default(""),
+    imageDataUrl: z.string().optional(),
+  }).parse(data))
+  .handler(async ({ data }) => {
+    const { topic, imageDataUrl } = data;
+    const userContent: any = imageDataUrl
+      ? [
+          { type: "text", text: `Suggest a high-CTR YouTube thumbnail headline (max 5 words, ALL CAPS) and subheading (max 8 words) for this image${topic ? ` about: ${topic}` : ""}. Make it curiosity-inducing and benefit-driven.` },
+          { type: "image_url", image_url: { url: imageDataUrl } },
+        ]
+      : `Suggest a high-CTR YouTube thumbnail headline (max 5 words, ALL CAPS) and subheading (max 8 words) for a video about: ${topic || "an engaging video"}. Make it curiosity-inducing and benefit-driven.`;
+
+    const result = await generateObject({
+      model: googleModel(),
+      schema: z.object({ headline: z.string(), subheading: z.string() }),
+      messages: [{ role: "user", content: userContent }] as any,
+    });
+    return result.object;
+  });
+
+// Legacy placeholders kept for backward compatibility
 export const generatePoster = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({
@@ -474,11 +550,7 @@ export const generatePoster = createServerFn({ method: "POST" })
     colors: z.array(z.string()).default(["#4f46e5", "#7c3aed", "#0ea5e9", "#f8fafc"]),
     aspectRatio: z.string().default("4:5"),
   }).parse(data))
-  .handler(async ({ data }) => {
-    return {
-      posterData: "Poster generation requires image output - coming soon",
-    };
-  });
+  .handler(async () => ({ posterData: "Use generateImage instead" }));
 
 export const generateThumbnail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -488,8 +560,5 @@ export const generateThumbnail = createServerFn({ method: "POST" })
     style: z.string().default("Bold"),
     brandColor: z.string().default("#ef4444"),
   }).parse(data))
-  .handler(async ({ data }) => {
-    return {
-      thumbnailData: "Thumbnail generation requires image output - coming soon",
-    };
-  });
+  .handler(async () => ({ thumbnailData: "Use generateImage instead" }));
+

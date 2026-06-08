@@ -446,71 +446,106 @@ export function FileDrop({
   );
 }
 
-// ====== SEO keyword smart search ======
-export function SeoKeywordPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+// ====== SEO keyword smart search (AI-powered with volume/difficulty/intent) ======
+type SeoSug = { keyword: string; volume: string; difficulty: string; intent: string };
+
+function badgeClass(kind: "volume" | "difficulty" | "intent", v: string) {
+  if (kind === "intent") return "bg-indigo-500/15 text-indigo-200 border-indigo-400/30";
+  const map: Record<string, string> = {
+    High: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30",
+    Easy: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30",
+    Medium: "bg-amber-500/15 text-amber-300 border-amber-400/30",
+    Low: "bg-slate-500/15 text-slate-300 border-slate-400/30",
+    Hard: "bg-rose-500/15 text-rose-300 border-rose-400/30",
+  };
+  return map[v] || "bg-white/5 text-foreground/70 border-white/10";
+}
+
+export function SeoKeywordPicker({ value, onChange, language = "English", industry }: { value: string[]; onChange: (v: string[]) => void; language?: string; industry?: string }) {
   const [q, setQ] = useState("");
-  const [sug, setSug] = useState<{ keyword: string; volume: number; competition: string }[]>([]);
+  const [sug, setSug] = useState<SeoSug[]>([]);
   const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (!q.trim() || q.trim().length < 3) { setSug([]); setOpen(false); return; }
+    setOpen(true);
     const t = setTimeout(async () => {
-      if (q.trim()) {
-        setLoading(true);
-        try {
-          const result = await generateSeoKeywords({ data: { query: q, count: 10 } });
-          setSug(result.keywords);
-        } catch (error) {
-          console.error("SEO keywords failed:", error);
-          setSug([]);
-        } finally {
-          setLoading(false);
-        }
-      } else {
+      setLoading(true);
+      try {
+        const result = await generateSeoKeywords({ data: { query: q, count: 10, language, industry } });
+        // Normalize: backend may return new shape or legacy number-volume.
+        const norm: SeoSug[] = (result.keywords as any[]).map((k) => ({
+          keyword: k.keyword,
+          volume: typeof k.volume === "number" ? (k.volume > 10000 ? "High" : k.volume > 2000 ? "Medium" : "Low") : (k.volume || "Medium"),
+          difficulty: k.difficulty || k.competition || "Medium",
+          intent: k.intent || "Informational",
+        }));
+        setSug(norm);
+      } catch (error) {
+        console.error("SEO keywords failed:", error);
         setSug([]);
+      } finally {
+        setLoading(false);
       }
-    }, 500);
+    }, 400);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, language, industry]);
+
+  const addKw = (k: string) => { if (!value.includes(k) && value.length < 10) onChange([...value, k]); };
 
   return (
     <div>
-      <FieldLabel>SEO Focus Keywords</FieldLabel>
+      <FieldLabel hint={value.length >= 10 ? "Max 10 reached" : undefined}>SEO Focus Keywords</FieldLabel>
       <div className="relative">
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search keywords..." className="bg-white/5 border-white/10" />
-        {loading && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">
-            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-          </div>
-        )}
-        {sug.length > 0 && (
-          <div className="absolute z-20 mt-1 w-full rounded-md bg-popover border border-white/10 shadow-lg max-h-56 overflow-y-auto">
+        <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-white/5 border border-white/10 p-1.5 min-h-9 focus-within:border-indigo-400/50 focus-within:ring-1 focus-within:ring-indigo-400/40">
+          {value.map((k) => (
+            <span key={k} className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 text-indigo-200 border border-indigo-400/30 px-2 py-0.5 text-[11px]">
+              {k}
+              <X className="h-2.5 w-2.5 cursor-pointer hover:text-rose-300" onClick={() => onChange(value.filter((x) => x !== k))} />
+            </span>
+          ))}
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.key === "Enter" || e.key === ",") && q.trim()) {
+                e.preventDefault();
+                addKw(q.trim()); setQ(""); setSug([]); setOpen(false);
+              } else if (e.key === "Backspace" && !q && value.length) {
+                onChange(value.slice(0, -1));
+              } else if (e.key === "Escape") {
+                setOpen(false);
+              }
+            }}
+            placeholder={value.length === 0 ? "Type a keyword and press Enter, or get AI suggestions..." : ""}
+            className="flex-1 min-w-44 bg-transparent outline-none text-xs px-1 py-1 text-foreground placeholder:text-muted-foreground"
+            disabled={value.length >= 10}
+          />
+          {loading && <Loader2 className="h-3 w-3 animate-spin text-indigo-300 mr-1" />}
+        </div>
+        {open && (sug.length > 0 || loading) && (
+          <div className="absolute z-30 mt-1 w-full rounded-lg bg-popover border border-white/10 shadow-2xl max-h-72 overflow-y-auto">
+            <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-white/5">AI Keyword Suggestions</div>
             {sug.map((s) => (
               <button key={s.keyword} type="button"
-                onClick={() => { if (!value.includes(s.keyword)) onChange([...value, s.keyword]); setQ(""); setSug([]); }}
-                className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-white/10 text-xs">
-                <span>{s.keyword}</span>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px]">{s.volume.toLocaleString()}</Badge>
-                  <Badge variant="outline" className="text-[10px]">{s.competition}</Badge>
+                onClick={() => { addKw(s.keyword); setQ(""); }}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 hover:bg-indigo-500/10 text-left">
+                <span className="text-xs font-medium text-foreground truncate">{s.keyword}</span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className={cn("rounded px-1.5 py-0.5 text-[9px] border", badgeClass("volume", s.volume))}>{s.volume}</span>
+                  <span className={cn("rounded px-1.5 py-0.5 text-[9px] border", badgeClass("difficulty", s.difficulty))}>{s.difficulty}</span>
+                  <span className={cn("rounded px-1.5 py-0.5 text-[9px] border", badgeClass("intent", s.intent))}>{s.intent.slice(0, 4)}</span>
                 </div>
               </button>
             ))}
           </div>
         )}
       </div>
-      {value.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {value.map((k) => (
-            <span key={k} className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 text-[10px]">
-              {k}
-              <X className="h-2.5 w-2.5 cursor-pointer" onClick={() => onChange(value.filter((x) => x !== k))} />
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
+
 
 // ====== Audience age picker ======
 export function AudienceAge({ value, onChange }: { value: string; onChange: (v: string) => void }) {
