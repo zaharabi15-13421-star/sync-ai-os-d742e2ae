@@ -3,6 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureAuthWorkspace } from "@/lib/auth.functions";
+import { finalizeAuthSessionFromUrl, hasAuthParamsInUrl } from "@/lib/auth-session";
 
 type AuthCtx = {
   session: Session | null;
@@ -24,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let hydrated = false;
 
     const applySession = (s: Session | null) => {
       if (!mounted) return;
@@ -39,22 +41,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     // Subscribe FIRST so we don't miss SIGNED_IN events.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === "INITIAL_SESSION" && !hydrated) return;
       applySession(s);
     });
 
-    // Then hydrate the current session.
-    supabase.auth.getSession()
-      .then(({ data }) => applySession(data.session))
+    // Then hydrate the current session. If an auth provider returned tokens to
+    // the current URL, finalize them before the app decides the visitor is a guest.
+    const hydrate = hasAuthParamsInUrl()
+      ? finalizeAuthSessionFromUrl().then(({ session }) => session)
+      : supabase.auth.getSession().then(({ data }) => data.session);
+
+    hydrate
+      .then((s) => {
+        hydrated = true;
+        applySession(s);
+      })
       .catch((error) => {
+        hydrated = true;
         console.error("[auth] session bootstrap failed", error);
         if (mounted) setLoading(false);
       });
 
     // Safety net: never let loading hang.
     const failsafe = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 4000);
+      if (mounted && !hydrated) setLoading(false);
+    }, 8000);
 
     return () => {
       mounted = false;

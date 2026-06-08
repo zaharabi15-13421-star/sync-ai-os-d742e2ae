@@ -5,6 +5,7 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AUTH_BROADCAST_CHANNEL } from "@/hooks/useEmailVerificationDetection";
 import { DASHBOARD_PATH, consumePostAuthRedirect } from "@/lib/auth-redirects";
+import { finalizeAuthSessionFromUrl } from "@/lib/auth-session";
 
 const AUTO_REDIRECT_MS = 2500;
 
@@ -45,41 +46,7 @@ function AuthCallback() {
 
     const run = async () => {
       try {
-        const hash = window.location.hash.replace(/^#/, "");
-        const hashParams = new URLSearchParams(hash);
-        const searchParams = new URLSearchParams(window.location.search.replace(/^\?/, ""));
-
-        const accessToken = hashParams.get("access_token") ?? searchParams.get("access_token");
-        const refreshToken = hashParams.get("refresh_token") ?? searchParams.get("refresh_token");
-        const code = searchParams.get("code");
-        const tokenHash = searchParams.get("token_hash");
-        const type = searchParams.get("type") as "signup" | "magiclink" | "recovery" | "email" | null;
-        const errParam = hashParams.get("error") ?? searchParams.get("error");
-
-        if (errParam) {
-          if (!cancelled) goHome();
-          return;
-        }
-
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
-        } else if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-          if (error) throw error;
-        } else if (tokenHash && type) {
-          const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-          if (error) throw error;
-        }
-
-        window.history.replaceState(null, "", window.location.pathname);
-
-        const { data, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        const session = data.session;
+        const { session } = await finalizeAuthSessionFromUrl();
 
         if (!session?.user) {
           if (!cancelled) goHome();

@@ -10,7 +10,8 @@ import { Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { clearPostAuthRedirect, DASHBOARD_PATH, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
+import { clearPostAuthRedirect, getAuthCallbackUrl, rememberPostAuthRedirect } from "@/lib/auth-redirects";
+import { redirectToAuthenticatedDestination } from "@/lib/auth-session";
 
 const INDUSTRIES = [
   "Technology / SaaS", "E-commerce / D2C", "Retail", "Fashion & Beauty", "Food & Beverage",
@@ -46,17 +47,11 @@ type Mode = "choose" | "create" | "login" | "success";
 
 async function finishAuthenticatedRedirect() {
   rememberPostAuthRedirect();
-
-  for (let i = 0; i < 8; i += 1) {
-    const { data } = await supabase.auth.getSession();
-    if (data.session?.access_token) {
-      window.location.replace(DASHBOARD_PATH);
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 125));
+  const result = await redirectToAuthenticatedDestination();
+  if (!result.ok) {
+    clearPostAuthRedirect();
+    toast.error("Sign-in was not completed. Please try again.");
   }
-
-  toast.error("Sign-in was not completed. Please try again.");
 }
 
 export function RegisterDemoModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
