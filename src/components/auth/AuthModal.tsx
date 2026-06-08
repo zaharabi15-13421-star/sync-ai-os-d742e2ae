@@ -462,7 +462,7 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
         email: normalizedEmail,
         options: {
           shouldCreateUser: false,
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: getAuthCallbackUrl(),
         },
       });
       if (otpErr) console.warn("OTP send error", otpErr);
@@ -649,7 +649,7 @@ function VerifyScreen({
       const { error: e } = await supabase.auth.resend({
         type: "signup",
         email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: getAuthCallbackUrl() },
       });
       if (e) throw e;
       toast.success(`Verification email resent to ${email}`);
