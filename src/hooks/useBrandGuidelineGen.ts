@@ -135,8 +135,10 @@ export function useBrandGuidelineGen() {
         const id = startRes.id;
         setGenerationId(id);
 
+        const { data: userData } = await supabase.auth.getUser();
+        const uid = userData.user?.id ?? "anon";
         channelRef.current = supabase
-          .channel(`bgg-${id}`)
+          .channel(`bgg:${uid}:${id}`)
           .on(
             "postgres_changes",
             {
