@@ -166,6 +166,7 @@ export function ImageLab() {
 export function PosterStudio() {
   const g = useGenerator();
   const [logo, setLogo] = useState<File | File[] | null>(null);
+  const [model, setModel] = useState<File | File[] | null>(null);
   const [title, setTitle] = useState("Grand Opening");
   const [subtitle, setSubtitle] = useState("This Saturday at 6 PM");
   const [desc, setDesc] = useState("Launching our flagship store with live music and gifts.");
@@ -177,7 +178,12 @@ export function PosterStudio() {
   const [colors, setColors] = useState<string[]>(["#4f46e5", "#7c3aed", "#0ea5e9", "#f8fafc"]);
   const [ratio, setRatio] = useState("4:5");
   const [atts, setAtts] = useState<PromptAttachment[]>([]);
-  const runGen = () => g.run("poster", { prompt: desc, tone, style: theme, aspectRatio: ratio, extras: { title, subtitle, cta, date, contact, colors }, attachments: atts });
+  const runGen = () => g.run("poster", {
+    prompt: desc, tone, style: theme, aspectRatio: ratio,
+    extras: { title, subtitle, cta, date, contact, colors, hasModelImage: !!model },
+    attachments: atts,
+  });
+
   return (
     <FeatureShell title="Intelligent Poster Studio" subtitle="Designed posters with smart layout, theme, and color control"
       left={<>
