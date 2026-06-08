@@ -179,12 +179,22 @@ export const buildGuidelineContent = createServerFn({ method: "POST" })
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: SYSTEM },
-          { role: "user", content: `Generate the brand guideline JSON for this brand:\n${JSON.stringify(brief)}` },
+          {
+            role: "user",
+            content:
+              `Produce the complete agency-grade brand guideline JSON for the brand below. ` +
+              `Write with editorial confidence. Every section must be richly detailed, specific to this brand, ` +
+              `and decision-ready. Use the supplied colors and typography exactly when present; ` +
+              `infer plausible CMYK/RGB from HEX. Do NOT omit any keys from the schema.\n\n` +
+              `BRAND INPUT:\n${JSON.stringify(brief, null, 2)}`,
+          },
         ],
         response_format: { type: "json_object" },
+        temperature: 0.8,
+        max_tokens: 16000,
       }),
     });
 
