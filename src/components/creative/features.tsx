@@ -190,12 +190,23 @@ export function PosterStudio() {
         <Section title="Brand">
           <FileDrop value={logo} onChange={setLogo} label="Brand Logo" hint="JPG / PNG / SVG · 5MB" />
         </Section>
+        <Section title="Model / Featured Image">
+          <FileDrop
+            value={model}
+            onChange={setModel}
+            accept="image/jpeg,image/png,image/webp"
+            label="Upload a clear photo of a person or featured image for your poster"
+            hint="JPG / PNG / WebP · Max 10MB · Full-body or portrait works best"
+          />
+        </Section>
         <Section title="Content">
-          <div><FieldLabel>Title</FieldLabel><Input value={title} onChange={(e) => setTitle(e.target.value)} className="bg-white/5 border-white/10" /></div>
+          <div><FieldLabel>Poster Headline</FieldLabel><Input value={title} onChange={(e) => setTitle(e.target.value)} className="bg-white/5 border-white/10" placeholder="e.g. Grand Opening — Join Us!" /></div>
           <div><FieldLabel>Subtitle / Tagline</FieldLabel><Input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} className="bg-white/5 border-white/10" /></div>
           <PromptInput value={desc} onChange={setDesc} label="Description" tone={tone} onToneChange={setTone} rows={3}
+            placeholder="Describe your event, offer, or promotion in detail..."
             attachments={atts} onAttachmentsChange={setAtts} />
           <div><FieldLabel>CTA (Call to Action)</FieldLabel><Input value={cta} onChange={(e) => setCta(e.target.value)} className="bg-white/5 border-white/10" placeholder="e.g. Book Your Spot, Shop Now, RSVP" /></div>
+
           <div className="grid grid-cols-2 gap-2">
             <div><FieldLabel>Date</FieldLabel><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-white/5 border-white/10" /></div>
             <div><FieldLabel>Contact / Website</FieldLabel><Input value={contact} onChange={(e) => setContact(e.target.value)} className="bg-white/5 border-white/10" /></div>
