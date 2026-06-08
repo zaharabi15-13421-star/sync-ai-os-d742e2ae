@@ -896,13 +896,12 @@ function LoginScreen({
     setGoogleLoading(true);
     logAuthEventFn({ data: { eventType: "login_attempted", metadata: { method: "google" } } }).catch(() => {});
     try {
-      localStorage.setItem(POST_AUTH_REDIRECT_KEY, DASHBOARD_PATH);
+      rememberPostAuthRedirect();
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: getAuthCallbackUrl(),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
-        localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
         toast.error("Google sign-in failed", { description: result.error.message });
         setGoogleLoading(false);
         return;
@@ -911,7 +910,6 @@ function LoginScreen({
       onGoogleDone();
       await finishAuthenticatedRedirect();
     } catch (e) {
-      localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
       toast.error("Google sign-in failed");
       setGoogleLoading(false);
     }
