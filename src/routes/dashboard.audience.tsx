@@ -585,12 +585,11 @@ function GeoIntentMap({
   }, [country]);
 
   const project = (lat: number, lng: number) => {
-    const range = Math.max(bounds.maxLat - bounds.minLat, bounds.maxLng - bounds.minLng);
-    const cx = (bounds.minLng + bounds.maxLng) / 2;
-    const cy = (bounds.minLat + bounds.maxLat) / 2;
-    const x = ((lng - cx) / range) * 80 + 50; // 10-90%
-    const y = ((cy - lat) / range) * 80 + 50;
-    return { x: Math.max(8, Math.min(92, x)), y: Math.max(10, Math.min(90, y)) };
+    const rangeLat = bounds.maxLat - bounds.minLat || 1;
+    const rangeLng = bounds.maxLng - bounds.minLng || 1;
+    const x = ((lng - bounds.minLng) / rangeLng) * 92 + 4; // 4-96%
+    const y = ((bounds.maxLat - lat) / rangeLat) * 88 + 6; // 6-94%
+    return { x, y };
   };
 
   const cityRows = useMemo(
@@ -604,16 +603,21 @@ function GeoIntentMap({
         const score = Math.min(100, engagementScore);
         const growing = country.platforms.tiktok.yoyGrowth > 10 || country.platforms.instagram.yoyGrowth > 10;
         const peak = country.platforms.facebook.peakHours;
-        const size = 24 + Math.min(40, Math.log10(Math.max(10, people)) * 10);
+        const size = 18 + Math.min(28, Math.log10(Math.max(10, people)) * 6);
         const color = lerpColor(TOKENS.info, TOKENS.success, score / 100);
         return { city, people, fbPct, ttPct, score, growing, peak, size, color };
       }),
     [country, interestPercent, wbPenetration],
   );
 
+
+  const positioned = cityRows.map((row) => ({ ...row, pos: project(row.city.lat, row.city.lng) }));
+  const TOOLTIP_W = 240;
+  const TOOLTIP_H = 170;
+
   return (
     <div
-      className="rounded-2xl p-4"
+      className="flex flex-col rounded-2xl p-4"
       style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}` }}
     >
       <div className="mb-3 flex items-center justify-between">
@@ -632,73 +636,88 @@ function GeoIntentMap({
       </div>
       <div
         ref={containerRef}
-        className="relative w-full overflow-hidden rounded-xl"
+        className="relative w-full flex-1 overflow-hidden rounded-xl"
         style={{
           background: TOKENS.input,
           border: `1px solid ${TOKENS.border}`,
-          height: 280,
+          minHeight: 460,
           backgroundImage: `radial-gradient(circle, ${TOKENS.border} 1px, transparent 1px)`,
-          backgroundSize: "20px 20px",
+          backgroundSize: "22px 22px",
         }}
       >
-        {cityRows.map((row, idx) => {
-          const pos = project(row.city.lat, row.city.lng);
+        {/* Bubbles + labels */}
+        {positioned.map((row, idx) => (
+          <div
+            key={row.city.name}
+            className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full transition-transform hover:scale-110"
+            style={{
+              left: `${row.pos.x}%`,
+              top: `${row.pos.y}%`,
+              width: row.size,
+              height: row.size,
+              background: `${row.color}55`,
+              border: `2px solid ${row.color}`,
+              boxShadow: `0 0 16px ${row.color}66`,
+              zIndex: hovered === idx ? 5 : 2,
+            }}
+            onMouseEnter={() => setHovered(idx)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            <div
+              className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium"
+              style={{ color: TOKENS.text }}
+            >
+              {row.city.name} · {row.score}%
+            </div>
+          </div>
+        ))}
+
+        {/* Tooltip overlay — rendered above all bubbles with smart positioning */}
+        {hovered !== null && (() => {
+          const row = positioned[hovered];
+          const w = containerRef.current?.clientWidth ?? 600;
+          const h = containerRef.current?.clientHeight ?? 460;
+          const px = (row.pos.x / 100) * w;
+          const py = (row.pos.y / 100) * h;
+          const showAbove = py > TOOLTIP_H + row.size / 2 + 16;
+          let left = px - TOOLTIP_W / 2;
+          left = Math.max(8, Math.min(w - TOOLTIP_W - 8, left));
+          const top = showAbove
+            ? py - row.size / 2 - TOOLTIP_H - 12
+            : py + row.size / 2 + 12;
           return (
             <div
-              key={row.city.name}
-              className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full transition-transform hover:scale-110"
+              className="pointer-events-none absolute z-30 rounded-lg p-3 text-left shadow-2xl"
               style={{
-                left: `${pos.x}%`,
-                top: `${pos.y}%`,
-                width: row.size,
-                height: row.size,
-                background: `${row.color}55`,
-                border: `2px solid ${row.color}`,
-                boxShadow: `0 0 16px ${row.color}66`,
+                left,
+                top: Math.max(8, Math.min(h - TOOLTIP_H - 8, top)),
+                width: TOOLTIP_W,
+                background: TOKENS.card,
+                border: `1px solid ${TOKENS.border}`,
+                backdropFilter: "blur(12px)",
               }}
-              onMouseEnter={() => setHovered(idx)}
-              onMouseLeave={() => setHovered(null)}
             >
-              <div
-                className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium"
-                style={{ color: TOKENS.text }}
-              >
-                {row.city.name} · {row.score}%
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[12px] font-semibold" style={{ color: TOKENS.text }}>
+                  {country.flag} {row.city.name}
+                </span>
+                <span className="text-[11px]" style={{ color: row.color }}>
+                  {row.score}%
+                </span>
               </div>
-
-              {hovered === idx && (
-                <div
-                  className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2 rounded-lg p-3 text-left shadow-2xl"
-                  style={{
-                    bottom: "calc(100% + 12px)",
-                    width: 240,
-                    background: TOKENS.card,
-                    border: `1px solid ${TOKENS.border}`,
-                  }}
-                >
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[12px] font-semibold" style={{ color: TOKENS.text }}>
-                      {country.flag} {row.city.name}
-                    </span>
-                    <span className="text-[11px]" style={{ color: row.color }}>
-                      {row.score}%
-                    </span>
-                  </div>
-                  <Row k="Est. Audience" v={`≈ ${formatNumber(row.people)} people`} />
-                  <Row k="Facebook" v={`${row.fbPct.toFixed(1)}% reach`} />
-                  <Row k="TikTok" v={`${row.ttPct.toFixed(1)}% reach`} />
-                  <Row k={row.growing ? "↗ Growing" : "→ Stable"} v="" />
-                  <Row k="⏱ Peak" v={row.peak} />
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    <SourceTag kind="DR" />
-                    <SourceTag kind="WB" />
-                    <SourceTag kind="AI" />
-                  </div>
-                </div>
-              )}
+              <Row k="Est. Audience" v={`≈ ${formatNumber(row.people)} people`} />
+              <Row k="Facebook" v={`${row.fbPct.toFixed(1)}% reach`} />
+              <Row k="TikTok" v={`${row.ttPct.toFixed(1)}% reach`} />
+              <Row k={row.growing ? "↗ Growing" : "→ Stable"} v="" />
+              <Row k="⏱ Peak" v={row.peak} />
+              <div className="mt-2 flex flex-wrap gap-1">
+                <SourceTag kind="DR" />
+                <SourceTag kind="WB" />
+                <SourceTag kind="AI" />
+              </div>
             </div>
           );
-        })}
+        })()}
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px]" style={{ color: TOKENS.muted }}>
         <div className="flex items-center gap-2">
@@ -714,6 +733,7 @@ function GeoIntentMap({
     </div>
   );
 }
+
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
@@ -983,7 +1003,7 @@ function PlatformReachGrid({ country, platform }: { country: CountryData; platfo
   if (platform === "linkedin") items.push({ key: "linkedin", name: "LinkedIn" });
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {items.map(({ key, name }) => {
         const isWhatsApp = key === "whatsapp";
         const data = country.platforms[key as Exclude<PlatformId, "all">];
