@@ -297,8 +297,6 @@ function TargetAudienceEngine(props: {
     { id: "facebook", label: "Meta" },
     { id: "tiktok", label: "TikTok" },
     { id: "youtube", label: "YouTube" },
-    { id: "whatsapp", label: "WhatsApp" },
-    { id: "linkedin", label: "LinkedIn" },
   ];
 
   return (
@@ -1042,8 +1040,6 @@ function PlatformReachGrid({ country, platform }: { country: CountryData; platfo
     { key: "instagram", name: "Instagram" },
     { key: "tiktok", name: "TikTok" },
     { key: "youtube", name: "YouTube" },
-    { key: "whatsapp", name: "WhatsApp" },
-    { key: "linkedin", name: "LinkedIn" },
   ];
   // Meta tab = Facebook + Instagram only; single-platform tabs show just that platform.
   const items: Array<{ key: PlatformId; name: string }> =
@@ -1059,14 +1055,9 @@ function PlatformReachGrid({ country, platform }: { country: CountryData; platfo
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {items.map(({ key, name }) => {
-        const isWhatsApp = key === "whatsapp";
         const data = country.platforms[key as Exclude<PlatformId, "all">];
-        const reachPercent = isWhatsApp
-          ? country.platforms.whatsapp.penetrationPercent
-          : (data as { reachPercent: number }).reachPercent;
-        const adReach = isWhatsApp
-          ? country.platforms.whatsapp.monthlyActiveUsers
-          : (data as { adReach: number }).adReach;
+        const reachPercent = (data as { reachPercent: number }).reachPercent;
+        const adReach = (data as { adReach: number }).adReach;
         const color = PLATFORM_COLORS[key] ?? TOKENS.purple;
         const active = platform === key;
         const yoy = (data as { yoyGrowth: number }).yoyGrowth;
@@ -1092,21 +1083,11 @@ function PlatformReachGrid({ country, platform }: { country: CountryData; platfo
               <Row k="CPM" v={`$${data.cpmUSD.toFixed(2)}`} />
               <Row k="Best Format" v={data.bestFormat} />
               <Row k="Peak Hours" v={data.peakHours} />
-              {!isWhatsApp && (
-                <>
-                  <Row k="Top Age" v={(data as { topAgeGroup: string }).topAgeGroup} />
-                  <Row
-                    k="Gender"
-                    v={`${(data as { genderMale: number }).genderMale}% M / ${(data as { genderFemale: number }).genderFemale}% F`}
-                  />
-                </>
-              )}
-              {isWhatsApp && (
-                <>
-                  <Row k="Open Rate" v={`${country.platforms.whatsapp.openRate}%`} />
-                  <Row k="CTR" v={`${country.platforms.whatsapp.ctr}%`} />
-                </>
-              )}
+              <Row k="Top Age" v={(data as { topAgeGroup: string }).topAgeGroup} />
+              <Row
+                k="Gender"
+                v={`${(data as { genderMale: number }).genderMale}% M / ${(data as { genderFemale: number }).genderFemale}% F`}
+              />
               <div className="flex justify-between gap-2 py-0.5">
                 <span style={{ color: TOKENS.muted }}>YoY Growth</span>
                 <span style={{ color: yoy >= 0 ? TOKENS.success : TOKENS.danger }}>
