@@ -358,6 +358,21 @@ export const markEmailVerified = createServerFn({ method: "POST" })
   });
 
 // ---------- logAuthEventFn (client-callable) ---------- //
+// Strict allowlist of event types accepted from unauthenticated callers.
+// Anything outside this list is rejected to prevent audit-log poisoning.
+const ALLOWED_CLIENT_EVENT_TYPES = new Set<string>([
+  "modal_opened",
+  "modal_closed",
+  "signup_method_selected",
+  "registration_form_started",
+  "registration_form_error",
+  "registration_form_submitted",
+  "email_verification_resent",
+  "login_attempted",
+  "login_success",
+  "password_reset_completed",
+]);
+
 export const logAuthEventFn = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
@@ -367,9 +382,20 @@ export const logAuthEventFn = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
+
   .handler(async ({ data }) => {
+    // Reject event types not on the allowlist to prevent audit-log poisoning.
+    if (!ALLOWED_CLIENT_EVENT_TYPES.has(data.eventType)) {
+      return { ok: true };
+    }
+    // Per-IP rate limit to prevent log flooding from anonymous callers.
+    const ip = getIp();
+    if (!rateLimit(`log:${ip ?? "unknown"}`, 30, 60 * 1000)) {
+      return { ok: true };
+    }
     // Derive userId from bearer token if present; never trust client-supplied IDs.
     let resolvedUserId: string | null = null;
+
     try {
       const authHeader = getRequestHeader("authorization");
       if (authHeader?.startsWith("Bearer ")) {
