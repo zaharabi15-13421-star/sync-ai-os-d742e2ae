@@ -406,17 +406,6 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
 
   const validateOther = useCallback((): RegistrationErrors => {
     const e: RegistrationErrors = {};
-    const name = sanitizeText(v.companyName);
-    if (!name) e.companyName = "Please enter your company or brand name";
-    else if (name.length < 2) e.companyName = "Must be at least 2 characters";
-    else if (name.length > 100) e.companyName = "Must be 100 characters or fewer";
-
-    if (!v.industry) e.industry = "Please select your industry";
-    if (!v.teamSize) e.teamSize = "Please select your team size";
-
-    if (v.websiteUrl.trim() && !/^https?:\/\//i.test(normalizeUrl(v.websiteUrl))) {
-      e.websiteUrl = "Please enter a valid website URL starting with https://";
-    }
 
     if (!v.password) e.password = "Password must be at least 8 characters";
     else if (v.password.length < 8) e.password = "Password must be at least 8 characters";
