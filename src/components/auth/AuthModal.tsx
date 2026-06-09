@@ -525,33 +525,6 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
             <p role="alert" className="mt-1 text-[12px]" style={{ color: "#EF4444" }}>{errors.email}</p>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <SelectField
-            label="Industry"
-            required
-            value={v.industry}
-            onChange={(val) => setField("industry", val)}
-            options={INDUSTRIES}
-            error={errors.industry}
-          />
-          <SelectField
-            label="Team size"
-            required
-            value={v.teamSize}
-            onChange={(val) => setField("teamSize", val)}
-            options={TEAM_SIZES}
-            error={errors.teamSize}
-          />
-        </div>
-        <TextField
-          label="Website URL"
-          hint="optional"
-          type="url"
-          placeholder="https://acmecorp.com"
-          value={v.websiteUrl}
-          onChange={(e) => setField("websiteUrl", e.target.value)}
-          error={errors.websiteUrl}
-        />
         <PasswordField
           label="Password"
           required
