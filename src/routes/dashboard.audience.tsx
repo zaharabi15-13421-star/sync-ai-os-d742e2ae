@@ -547,10 +547,10 @@ function StatsRow(props: {
   wbData: WorldBankData | null;
   wbLoading: boolean;
   wbError: boolean;
-  selectedYear: string;
+  dateLabel: string;
   countrySelected: boolean;
 }) {
-  const { metrics, country, interestLabel, platform, wbData, wbLoading, wbError, selectedYear, countrySelected } = props;
+  const { metrics, country, interestLabel, platform, wbData, wbLoading, wbError, dateLabel, countrySelected } = props;
   const opportunityColors: Record<string, string> = {
     Excellent: TOKENS.success,
     Good: "#14B8A6",
@@ -558,7 +558,6 @@ function StatsRow(props: {
     Limited: TOKENS.danger,
   };
   const wbUsable = wbData && !wbError;
-  const prevYear = String(Number(selectedYear) - 1);
   const EMPTY = <span style={{ color: TOKENS.label }}>—</span>;
   const emptySub = "Select a country to view data";
 
