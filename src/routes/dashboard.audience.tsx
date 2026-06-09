@@ -63,7 +63,8 @@ function AudienceIntelligencePage() {
   const [selectedCountry, setSelectedCountry] = useState<string>("BD");
   const [selectedInterests, setSelectedInterests] = useState<string[]>(["fitness"]);
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformId | "">("all");
-  const [selectedYear, setSelectedYear] = useState<"2025" | "2024" | "2023" | "">("2025");
+  const [dateRange, setDateRange] = useState<DateRangePreset>("1y");
+  const [customRange, setCustomRange] = useState<CustomDateRange | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -74,9 +75,13 @@ function AudienceIntelligencePage() {
   // Downstream calculations need concrete values; fall back to neutral baselines when nothing is selected.
   const country: CountryData = audienceData[selectedCountry] ?? audienceData.BD;
   const effectivePlatform: PlatformId = (selectedPlatform || "all") as PlatformId;
-  const effectiveYear: "2025" | "2024" | "2023" = selectedYear || "2025";
   const primaryInterestId = selectedInterests[0] ?? "business";
   const interest = getInterest(primaryInterestId);
+  const interestLabelCombined = selectedInterests.length === 0
+    ? interest.label
+    : selectedInterests.length === 1
+      ? getInterest(selectedInterests[0]).label
+      : `${selectedInterests.length} interests`;
 
 
   useEffect(() => {
