@@ -457,6 +457,9 @@ function TargetAudienceEngine(props: {
             minWidth: 200,
           }}
         >
+          <option value="" disabled>
+            Select country…
+          </option>
           {countries.map((c) => (
             <option key={c.iso2} value={c.iso2}>
               {c.flag} {c.name}
