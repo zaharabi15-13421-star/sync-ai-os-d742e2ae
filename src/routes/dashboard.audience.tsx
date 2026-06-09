@@ -426,7 +426,7 @@ function TargetAudienceEngine(props: {
               <button
                 key={p.id}
                 type="button"
-                onClick={() => onPlatformChange(p.id)}
+                onClick={() => onPlatformChange(active ? "" : p.id)}
                 className="rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors"
                 style={{
                   background: active ? TOKENS.purple : TOKENS.input,
