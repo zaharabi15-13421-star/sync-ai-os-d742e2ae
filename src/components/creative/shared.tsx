@@ -604,6 +604,48 @@ type HistoryItem = {
   created_at: string;
 };
 
+function ImageGenProgress({ active }: { active: boolean }) {
+  const [pct, setPct] = useState(0);
+  const [phase, setPhase] = useState("Initializing");
+  useEffect(() => {
+    if (!active) return;
+    setPct(0);
+    setPhase("Initializing");
+    const start = Date.now();
+    // Asymptotic curve toward 95% over ~14s — purely cosmetic, never blocks generation.
+    const id = window.setInterval(() => {
+      const elapsed = (Date.now() - start) / 1000;
+      const target = 95 * (1 - Math.exp(-elapsed / 5));
+      setPct((p) => Math.max(p, Math.min(95, target)));
+      if (elapsed < 1.2) setPhase("Initializing model");
+      else if (elapsed < 3) setPhase("Composing scene");
+      else if (elapsed < 6) setPhase("Rendering details");
+      else if (elapsed < 10) setPhase("Refining lighting & color");
+      else setPhase("Finalizing image");
+    }, 120);
+    return () => {
+      window.clearInterval(id);
+      setPct(100);
+    };
+  }, [active]);
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 z-10">
+      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-indigo-500/40 to-purple-600/40 flex items-center justify-center mb-3">
+        <Loader2 className="h-5 w-5 text-indigo-100 animate-spin" />
+      </div>
+      <div className="text-xs uppercase tracking-widest text-indigo-200/90">{phase}</div>
+      <div className="mt-1 text-3xl font-semibold tabular-nums text-white">{Math.floor(pct)}%</div>
+      <div className="mt-3 w-56 h-1.5 rounded-full bg-white/10 overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-indigo-400 to-purple-500 transition-[width] duration-200 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="mt-2 text-[10px] text-foreground/60">Generating your image…</div>
+    </div>
+  );
+}
+
 export function OutputPanel({
   loading, generated, onGenerate, children, kind = "content", contentForCritique = "",
   module: moduleId, imageUrl, textContent,
