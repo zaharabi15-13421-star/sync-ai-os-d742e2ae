@@ -491,9 +491,6 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
   const strength = scorePassword(v.password);
   const passwordsMatch = v.confirmPassword.length > 0 && v.confirmPassword === v.password;
   const otherFieldsValid =
-    sanitizeText(v.companyName).length >= 2 &&
-    Boolean(v.industry) &&
-    Boolean(v.teamSize) &&
     v.password.length >= 8 &&
     passwordsMatch &&
     v.acceptTerms;
