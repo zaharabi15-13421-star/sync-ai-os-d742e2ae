@@ -689,7 +689,7 @@ function GeoIntentMap({
         {positioned.map((row, idx) => (
           <div
             key={row.city.name}
-            className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full transition-transform hover:scale-110"
+            className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform"
             style={{
               left: `${row.pos.x}%`,
               top: `${row.pos.y}%`,
@@ -699,21 +699,24 @@ function GeoIntentMap({
               border: `2px solid ${row.color}`,
               boxShadow: `0 0 16px ${row.color}66`,
               zIndex: hovered === idx ? 5 : 2,
+              cursor: countrySelected ? "pointer" : "default",
             }}
-            onMouseEnter={() => setHovered(idx)}
-            onMouseLeave={() => setHovered(null)}
+            onMouseEnter={() => countrySelected && setHovered(idx)}
+            onMouseLeave={() => countrySelected && setHovered(null)}
           >
-            <div
-              className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium"
-              style={{ color: TOKENS.text }}
-            >
-              {row.city.name} · {row.score}%
-            </div>
+            {countrySelected && (
+              <div
+                className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium"
+                style={{ color: TOKENS.text }}
+              >
+                {row.city.name} · {row.score}%
+              </div>
+            )}
           </div>
         ))}
 
         {/* Tooltip overlay — rendered above all bubbles with smart positioning */}
-        {hovered !== null && (() => {
+        {countrySelected && hovered !== null && (() => {
           const row = positioned[hovered];
           const w = containerRef.current?.clientWidth ?? 600;
           const h = containerRef.current?.clientHeight ?? 460;
