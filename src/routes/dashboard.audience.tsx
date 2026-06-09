@@ -164,8 +164,10 @@ function AudienceIntelligencePage() {
         }
         selectedPlatform={selectedPlatform}
         onPlatformChange={setSelectedPlatform}
-        selectedYear={selectedYear}
-        onYearChange={setSelectedYear}
+        dateRange={dateRange}
+        onDateRangeChange={(r) => { setDateRange(r); if (r !== "custom") setCustomRange(null); }}
+        customRange={customRange}
+        onCustomRangeChange={(r) => { setCustomRange(r); setDateRange("custom"); }}
 
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -177,12 +179,12 @@ function AudienceIntelligencePage() {
       <StatsRow
         metrics={metrics}
         country={country}
-        interestLabel={interest.label}
+        interestLabel={interestLabelCombined}
         platform={effectivePlatform}
         wbData={wbData}
         wbLoading={wbLoading}
         wbError={wbError}
-        selectedYear={effectiveYear}
+        dateLabel={metrics.dateLabel}
         countrySelected={!!selectedCountry}
       />
 
