@@ -983,7 +983,7 @@ function PlatformReachGrid({ country, platform }: { country: CountryData; platfo
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
       {items.map(({ key, name }) => {
         const isWhatsApp = key === "whatsapp";
-        const data = country.platforms[key];
+        const data = country.platforms[key as Exclude<PlatformId, "all">];
         const reachPercent = isWhatsApp
           ? country.platforms.whatsapp.penetrationPercent
           : (data as { reachPercent: number }).reachPercent;
