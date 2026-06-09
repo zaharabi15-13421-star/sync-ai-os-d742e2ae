@@ -59,7 +59,7 @@ function SourceTag({ kind, text }: { kind: SourceKind; text?: string }) {
 // ---------- Page ----------
 function AudienceIntelligencePage() {
   const [selectedCountry, setSelectedCountry] = useState("BD");
-  const [selectedInterest, setSelectedInterest] = useState("business");
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformId>("all");
   const [selectedYear, setSelectedYear] = useState<"2025" | "2024" | "2023">("2025");
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,7 +70,10 @@ function AudienceIntelligencePage() {
   const [wbError, setWbError] = useState(false);
 
   const country: CountryData = audienceData[selectedCountry] ?? audienceData.BD;
-  const interest = getInterest(selectedInterest);
+  // Use first selected interest for metric calculations; fall back to a neutral baseline when none selected.
+  const primaryInterestId = selectedInterests[0] ?? "business";
+  const interest = getInterest(primaryInterestId);
+
 
   useEffect(() => {
     let cancelled = false;
