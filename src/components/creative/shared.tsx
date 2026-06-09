@@ -720,6 +720,7 @@ export function OutputPanel({
             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
               <div className="h-72 rounded bg-white/5 relative overflow-hidden">
                 <div className="absolute inset-0 shimmer" />
+                {kind === "image" && <ImageGenProgress active={loading} />}
               </div>
               <div className="h-3 bg-white/5 rounded w-2/3" />
               <div className="h-3 bg-white/5 rounded w-1/2" />
