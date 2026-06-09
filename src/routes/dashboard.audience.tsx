@@ -1299,12 +1299,11 @@ function DemographicsPanel({ country, platform }: { country: CountryData; platfo
 }
 
 // ---------- Conversion Matrix ----------
-function ConversionMatrix({ country, interestId }: { country: CountryData; interestId: string }) {
-  const interest = getInterest(interestId);
-  const cols: Array<{ name: string; engagement: number }> = [
-    { name: "Meta", engagement: country.platforms.facebook.engagementRate },
-    { name: "TikTok", engagement: country.platforms.tiktok.engagementRate },
-    { name: "WhatsApp", engagement: country.platforms.whatsapp.ctr },
+function ConversionMatrix({ country, interestIds, platform }: { country: CountryData; interestIds: string[]; platform: PlatformId }) {
+  const cols: Array<{ name: string; engagement: number; key: string }> = [
+    { name: "Meta", engagement: country.platforms.facebook.engagementRate, key: "meta" },
+    { name: "TikTok", engagement: country.platforms.tiktok.engagementRate, key: "tiktok" },
+    { name: "WhatsApp", engagement: country.platforms.whatsapp.ctr, key: "whatsapp" },
   ];
   const rows: Array<{ name: string; multiplier: number }> = [
     { name: "High", multiplier: 11 },
@@ -1312,10 +1311,23 @@ function ConversionMatrix({ country, interestId }: { country: CountryData; inter
     { name: "Emerging", multiplier: 4.5 },
   ];
 
-  const interestBoost = Math.max(0.7, Math.min(1.4, interest.basePercent / 10));
+  // Multi-interest average boost
+  const ids = interestIds.length > 0 ? interestIds : ["business"];
+  const interestBoost = ids
+    .map((id) => Math.max(0.7, Math.min(1.4, getInterest(id).basePercent / 10)))
+    .reduce((a, b) => a + b, 0) / ids.length;
+
+  // Platform context boost — selected tab biases its relevant conversion column
+  const colBoost = (key: string) => {
+    if (platform === "all") return 1.0;
+    if (platform === "facebook" || platform === "instagram") return key === "meta" ? 1.3 : 0.9;
+    if (platform === "tiktok") return key === "tiktok" ? 1.4 : 0.85;
+    if (platform === "youtube") return key === "meta" ? 0.95 : key === "tiktok" ? 1.05 : 0.9;
+    return 1.0;
+  };
 
   const cell = (r: number, c: number) => {
-    const base = cols[c].engagement * rows[r].multiplier * interestBoost;
+    const base = cols[c].engagement * rows[r].multiplier * interestBoost * colBoost(cols[c].key);
     return Math.max(5, Math.min(95, Math.round(base)));
   };
 
