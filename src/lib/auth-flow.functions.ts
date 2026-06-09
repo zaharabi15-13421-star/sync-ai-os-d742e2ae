@@ -384,8 +384,18 @@ export const logAuthEventFn = createServerFn({ method: "POST" })
   )
 
   .handler(async ({ data }) => {
+    // Reject event types not on the allowlist to prevent audit-log poisoning.
+    if (!ALLOWED_CLIENT_EVENT_TYPES.has(data.eventType)) {
+      return { ok: true };
+    }
+    // Per-IP rate limit to prevent log flooding from anonymous callers.
+    const ip = getIp();
+    if (!rateLimit(`log:${ip ?? "unknown"}`, 30, 60 * 1000)) {
+      return { ok: true };
+    }
     // Derive userId from bearer token if present; never trust client-supplied IDs.
     let resolvedUserId: string | null = null;
+
     try {
       const authHeader = getRequestHeader("authorization");
       if (authHeader?.startsWith("Bearer ")) {
