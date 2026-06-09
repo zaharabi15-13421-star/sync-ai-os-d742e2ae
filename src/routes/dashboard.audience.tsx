@@ -97,8 +97,8 @@ function AudienceIntelligencePage() {
   }, [country.iso2]);
 
   const metrics = useMemo(
-    () => calculateMetrics(country, selectedPlatform, primaryInterestId, wbError ? null : wbData),
-    [country, selectedPlatform, primaryInterestId, wbData, wbError],
+    () => calculateMetrics(country, effectivePlatform, primaryInterestId, wbError ? null : wbData),
+    [country, effectivePlatform, primaryInterestId, wbData, wbError],
   );
 
 
@@ -112,7 +112,7 @@ function AudienceIntelligencePage() {
     const rows: string[][] = [
       ["Metric", "Value", "Source"],
       ["Country", country.name, "DR"],
-      ["Selected Platform", selectedPlatform, "—"],
+      ["Selected Platform", selectedPlatform || "—", "—"],
       ["Selected Interest", interest.label, "AI"],
       ["Platform Audience", String(metrics.platformAudience), "DR"],
       ["Internet Users", String(metrics.internetUsers), wbError || !wbData ? "DR" : "WB"],
