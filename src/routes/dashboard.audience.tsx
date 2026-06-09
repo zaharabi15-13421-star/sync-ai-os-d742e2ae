@@ -607,7 +607,7 @@ function StatsRow(props: {
             {metrics.avgYoyGrowth.toFixed(1)}%
           </span>
         ) : EMPTY}
-        sub={countrySelected ? `Social media growth ${selectedYear} vs ${prevYear}` : emptySub}
+        sub={countrySelected ? `Social media growth · ${dateLabel}` : emptySub}
         tag={<SourceTag kind="DR" text="DataReportal 2025" />}
       />
       <StatCard
