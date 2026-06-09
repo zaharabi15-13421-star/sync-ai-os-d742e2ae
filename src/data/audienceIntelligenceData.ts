@@ -462,7 +462,7 @@ export const INTEREST_CATEGORIES = [
   { id: "parents", label: "New Parents", basePercent: 6.8, trend: "stable" },
   { id: "eco", label: "Eco-conscious Consumers", basePercent: 5.9, trend: "growing" },
   { id: "travel", label: "Travel Enthusiasts", basePercent: 10.1, trend: "stable" },
-  { id: "crypto", label: "Crypto & Finance", basePercent: 7.2, trend: "growing" },
+  { id: "finance", label: "Finance & Investment", basePercent: 7.2, trend: "growing" },
   { id: "beauty", label: "Beauty & Skincare", basePercent: 9.8, trend: "growing" },
   { id: "health", label: "Health & Wellness", basePercent: 11.4, trend: "growing" },
   { id: "education", label: "Online Learners", basePercent: 12.1, trend: "growing" },

@@ -11,6 +11,8 @@ import {
   calculateMetrics,
   formatNumber,
   getInterest,
+  type DateRangePreset,
+  type CustomDateRange,
 } from "@/services/audienceCalculator";
 import type { PlatformId, WorldBankData } from "@/types/audience";
 
@@ -61,7 +63,8 @@ function AudienceIntelligencePage() {
   const [selectedCountry, setSelectedCountry] = useState<string>("BD");
   const [selectedInterests, setSelectedInterests] = useState<string[]>(["fitness"]);
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformId | "">("all");
-  const [selectedYear, setSelectedYear] = useState<"2025" | "2024" | "2023" | "">("2025");
+  const [dateRange, setDateRange] = useState<DateRangePreset>("1y");
+  const [customRange, setCustomRange] = useState<CustomDateRange | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -72,9 +75,13 @@ function AudienceIntelligencePage() {
   // Downstream calculations need concrete values; fall back to neutral baselines when nothing is selected.
   const country: CountryData = audienceData[selectedCountry] ?? audienceData.BD;
   const effectivePlatform: PlatformId = (selectedPlatform || "all") as PlatformId;
-  const effectiveYear: "2025" | "2024" | "2023" = selectedYear || "2025";
   const primaryInterestId = selectedInterests[0] ?? "business";
   const interest = getInterest(primaryInterestId);
+  const interestLabelCombined = selectedInterests.length === 0
+    ? interest.label
+    : selectedInterests.length === 1
+      ? getInterest(selectedInterests[0]).label
+      : `${selectedInterests.length} interests`;
 
 
   useEffect(() => {
@@ -97,8 +104,8 @@ function AudienceIntelligencePage() {
   }, [country.iso2]);
 
   const metrics = useMemo(
-    () => calculateMetrics(country, effectivePlatform, primaryInterestId, wbError ? null : wbData),
-    [country, effectivePlatform, primaryInterestId, wbData, wbError],
+    () => calculateMetrics(country, effectivePlatform, selectedInterests, wbError ? null : wbData, dateRange, customRange),
+    [country, effectivePlatform, selectedInterests, wbData, wbError, dateRange, customRange],
   );
 
 
@@ -157,8 +164,10 @@ function AudienceIntelligencePage() {
         }
         selectedPlatform={selectedPlatform}
         onPlatformChange={setSelectedPlatform}
-        selectedYear={selectedYear}
-        onYearChange={setSelectedYear}
+        dateRange={dateRange}
+        onDateRangeChange={(r) => { setDateRange(r); if (r !== "custom") setCustomRange(null); }}
+        customRange={customRange}
+        onCustomRangeChange={(r) => { setCustomRange(r); setDateRange("custom"); }}
 
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -170,12 +179,12 @@ function AudienceIntelligencePage() {
       <StatsRow
         metrics={metrics}
         country={country}
-        interestLabel={interest.label}
+        interestLabel={interestLabelCombined}
         platform={effectivePlatform}
         wbData={wbData}
         wbLoading={wbLoading}
         wbError={wbError}
-        selectedYear={effectiveYear}
+        dateLabel={metrics.dateLabel}
         countrySelected={!!selectedCountry}
       />
 
@@ -199,7 +208,7 @@ function AudienceIntelligencePage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <InternetPenetrationChart country={country} wbPenetration={metrics.internetPenetration} />
         <DemographicsPanel country={country} platform={effectivePlatform} />
-        <ConversionMatrix country={country} interestId={primaryInterestId} />
+        <ConversionMatrix country={country} interestIds={selectedInterests} platform={effectivePlatform} />
       </div>
 
       <TransparencyFooter />
@@ -255,8 +264,10 @@ function TargetAudienceEngine(props: {
   onRemoveInterest: (id: string) => void;
   selectedPlatform: PlatformId | "";
   onPlatformChange: (p: PlatformId | "") => void;
-  selectedYear: "2025" | "2024" | "2023" | "";
-  onYearChange: (y: "2025" | "2024" | "2023" | "") => void;
+  dateRange: DateRangePreset;
+  onDateRangeChange: (r: DateRangePreset) => void;
+  customRange: CustomDateRange | null;
+  onCustomRangeChange: (r: CustomDateRange) => void;
   searchQuery: string;
   onSearchChange: (v: string) => void;
   showDropdown: boolean;
@@ -272,8 +283,10 @@ function TargetAudienceEngine(props: {
     onRemoveInterest,
     selectedPlatform,
     onPlatformChange,
-    selectedYear,
-    onYearChange,
+    dateRange,
+    onDateRangeChange,
+    customRange,
+    onCustomRangeChange,
     searchQuery,
     onSearchChange,
     showDropdown,
@@ -283,6 +296,9 @@ function TargetAudienceEngine(props: {
 
   const country = audienceData[selectedCountry];
   const wrapRef = useRef<HTMLDivElement>(null);
+  const [showCustom, setShowCustom] = useState(false);
+  const [customFrom, setCustomFrom] = useState<string>(customRange ? customRange.from.toISOString().slice(0, 10) : "");
+  const [customTo, setCustomTo] = useState<string>(customRange ? customRange.to.toISOString().slice(0, 10) : "");
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -318,7 +334,7 @@ function TargetAudienceEngine(props: {
               onShowDropdown(true);
             }}
             onFocus={() => onShowDropdown(true)}
-            placeholder="Search any interest, behavior, or demographic (e.g. yoga, crypto, SaaS founders, luxury travel)"
+            placeholder="Search any interest, behavior, or demographic (e.g. yoga, fitness, SaaS founders, luxury travel)"
             className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[12px]"
             style={{ color: TOKENS.text }}
           />
@@ -441,13 +457,22 @@ function TargetAudienceEngine(props: {
         </div>
 
         <div className="flex items-center gap-1.5">
-          {(["2025", "2024", "2023"] as const).map((y) => {
-            const active = selectedYear === y;
+          {([
+            { id: "7d" as DateRangePreset, label: "Last 7D" },
+            { id: "1m" as DateRangePreset, label: "Last 1M" },
+            { id: "3m" as DateRangePreset, label: "Last 3M" },
+            { id: "1y" as DateRangePreset, label: "Last 1Y" },
+            { id: "custom" as DateRangePreset, label: "📅 Custom" },
+          ]).map((opt) => {
+            const active = dateRange === opt.id;
             return (
               <button
-                key={y}
+                key={opt.id}
                 type="button"
-                onClick={() => onYearChange(active ? "" : y)}
+                onClick={() => {
+                  if (opt.id === "custom") setShowCustom((s) => !s);
+                  else { onDateRangeChange(opt.id); setShowCustom(false); }
+                }}
                 className="rounded-full px-3 py-1.5 text-[12px] font-medium"
                 style={{
                   background: active ? TOKENS.purple : TOKENS.input,
@@ -455,16 +480,59 @@ function TargetAudienceEngine(props: {
                   border: `1px solid ${active ? TOKENS.purple : TOKENS.border}`,
                 }}
               >
-                {y}
+                {opt.label}
               </button>
             );
           })}
         </div>
 
         <span className="text-[11px]" style={{ color: TOKENS.label }}>
-          DataReportal publishes annual reports each January
+          {dateRange === "custom" && customRange
+            ? `${customRange.from.toLocaleDateString()} – ${customRange.to.toLocaleDateString()}`
+            : "Estimates derived from DataReportal annual benchmarks"}
         </span>
       </div>
+
+      {showCustom && (
+        <div
+          className="flex flex-wrap items-end gap-3 rounded-[10px] p-3"
+          style={{ background: TOKENS.input, border: `1px solid ${TOKENS.border}` }}
+        >
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-semibold tracking-wider" style={{ color: TOKENS.label }}>FROM</label>
+            <input
+              type="date"
+              value={customFrom}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              className="rounded-md px-2 py-1.5 text-[12px] outline-none"
+              style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}`, color: TOKENS.text }}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-semibold tracking-wider" style={{ color: TOKENS.label }}>TO</label>
+            <input
+              type="date"
+              value={customTo}
+              onChange={(e) => setCustomTo(e.target.value)}
+              className="rounded-md px-2 py-1.5 text-[12px] outline-none"
+              style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}`, color: TOKENS.text }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (customFrom && customTo) {
+                onCustomRangeChange({ from: new Date(customFrom), to: new Date(customTo) });
+                setShowCustom(false);
+              }
+            }}
+            className="rounded-md px-3 py-1.5 text-[12px] font-medium text-white"
+            style={{ background: TOKENS.purple }}
+          >
+            Apply Range
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -479,10 +547,10 @@ function StatsRow(props: {
   wbData: WorldBankData | null;
   wbLoading: boolean;
   wbError: boolean;
-  selectedYear: string;
+  dateLabel: string;
   countrySelected: boolean;
 }) {
-  const { metrics, country, interestLabel, platform, wbData, wbLoading, wbError, selectedYear, countrySelected } = props;
+  const { metrics, country, interestLabel, platform, wbData, wbLoading, wbError, dateLabel, countrySelected } = props;
   const opportunityColors: Record<string, string> = {
     Excellent: TOKENS.success,
     Good: "#14B8A6",
@@ -490,7 +558,6 @@ function StatsRow(props: {
     Limited: TOKENS.danger,
   };
   const wbUsable = wbData && !wbError;
-  const prevYear = String(Number(selectedYear) - 1);
   const EMPTY = <span style={{ color: TOKENS.label }}>—</span>;
   const emptySub = "Select a country to view data";
 
@@ -540,7 +607,7 @@ function StatsRow(props: {
             {metrics.avgYoyGrowth.toFixed(1)}%
           </span>
         ) : EMPTY}
-        sub={countrySelected ? `Social media growth ${selectedYear} vs ${prevYear}` : emptySub}
+        sub={countrySelected ? `Social media growth · ${dateLabel}` : emptySub}
         tag={<SourceTag kind="DR" text="DataReportal 2025" />}
       />
       <StatCard
@@ -1160,26 +1227,27 @@ function InternetPenetrationChart({
 
 // ---------- Demographics Panel ----------
 function DemographicsPanel({ country, platform }: { country: CountryData; platform: PlatformId }) {
+  // Platform-specific age distributions ensure tab switches visibly shift demographics.
+  const AGE_BY_PLATFORM: Record<string, [number, number, number, number]> = {
+    all:       [28, 38, 22, 12],
+    facebook:  [18, 35, 28, 19],
+    instagram: [32, 38, 20, 10],
+    tiktok:    [45, 32, 16,  7],
+    youtube:   [24, 36, 25, 15],
+    whatsapp:  [20, 40, 28, 12],
+    linkedin:  [ 8, 42, 34, 16],
+  };
+  const ageBuckets = AGE_BY_PLATFORM[platform] ?? AGE_BY_PLATFORM.all;
+
   const ref =
     platform === "all" || platform === "whatsapp"
       ? country.platforms.facebook
       : (country.platforms[platform as Exclude<PlatformId, "all" | "whatsapp">] as import("@/data/audienceIntelligenceData").PlatformData);
 
-  // Derive an age distribution from topAgeGroup (DR-aligned heuristic).
-  const ageBuckets = useMemo(() => {
-    const top = ref.topAgeGroup;
-    const weights: Record<string, number[]> = {
-      // [16-24, 25-34, 35-44, 45+]
-      "16–24": [50, 28, 14, 8],
-      "18–34": [28, 38, 22, 12],
-      "18–44": [22, 30, 28, 20],
-      "25–44": [14, 36, 32, 18],
-    };
-    return weights[top] ?? [25, 30, 25, 20];
-  }, [ref.topAgeGroup]);
-
-  const male = ref.genderMale || 50;
-  const female = ref.genderFemale || 50;
+  const male = platform === "all"
+    ? Math.round((country.platforms.facebook.genderMale + country.platforms.instagram.genderMale + country.platforms.tiktok.genderMale + country.platforms.youtube.genderMale) / 4)
+    : ref.genderMale || 50;
+  const female = 100 - male;
   const urban = country.urbanPopulationPercent;
   const rural = 100 - urban;
 
@@ -1231,12 +1299,11 @@ function DemographicsPanel({ country, platform }: { country: CountryData; platfo
 }
 
 // ---------- Conversion Matrix ----------
-function ConversionMatrix({ country, interestId }: { country: CountryData; interestId: string }) {
-  const interest = getInterest(interestId);
-  const cols: Array<{ name: string; engagement: number }> = [
-    { name: "Meta", engagement: country.platforms.facebook.engagementRate },
-    { name: "TikTok", engagement: country.platforms.tiktok.engagementRate },
-    { name: "WhatsApp", engagement: country.platforms.whatsapp.ctr },
+function ConversionMatrix({ country, interestIds, platform }: { country: CountryData; interestIds: string[]; platform: PlatformId }) {
+  const cols: Array<{ name: string; engagement: number; key: string }> = [
+    { name: "Meta", engagement: country.platforms.facebook.engagementRate, key: "meta" },
+    { name: "TikTok", engagement: country.platforms.tiktok.engagementRate, key: "tiktok" },
+    { name: "WhatsApp", engagement: country.platforms.whatsapp.ctr, key: "whatsapp" },
   ];
   const rows: Array<{ name: string; multiplier: number }> = [
     { name: "High", multiplier: 11 },
@@ -1244,10 +1311,23 @@ function ConversionMatrix({ country, interestId }: { country: CountryData; inter
     { name: "Emerging", multiplier: 4.5 },
   ];
 
-  const interestBoost = Math.max(0.7, Math.min(1.4, interest.basePercent / 10));
+  // Multi-interest average boost
+  const ids = interestIds.length > 0 ? interestIds : ["business"];
+  const interestBoost = ids
+    .map((id) => Math.max(0.7, Math.min(1.4, getInterest(id).basePercent / 10)))
+    .reduce((a, b) => a + b, 0) / ids.length;
+
+  // Platform context boost — selected tab biases its relevant conversion column
+  const colBoost = (key: string) => {
+    if (platform === "all") return 1.0;
+    if (platform === "facebook" || platform === "instagram") return key === "meta" ? 1.3 : 0.9;
+    if (platform === "tiktok") return key === "tiktok" ? 1.4 : 0.85;
+    if (platform === "youtube") return key === "meta" ? 0.95 : key === "tiktok" ? 1.05 : 0.9;
+    return 1.0;
+  };
 
   const cell = (r: number, c: number) => {
-    const base = cols[c].engagement * rows[r].multiplier * interestBoost;
+    const base = cols[c].engagement * rows[r].multiplier * interestBoost * colBoost(cols[c].key);
     return Math.max(5, Math.min(95, Math.round(base)));
   };
 
