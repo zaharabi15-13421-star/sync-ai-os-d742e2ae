@@ -264,8 +264,10 @@ function TargetAudienceEngine(props: {
   onRemoveInterest: (id: string) => void;
   selectedPlatform: PlatformId | "";
   onPlatformChange: (p: PlatformId | "") => void;
-  selectedYear: "2025" | "2024" | "2023" | "";
-  onYearChange: (y: "2025" | "2024" | "2023" | "") => void;
+  dateRange: DateRangePreset;
+  onDateRangeChange: (r: DateRangePreset) => void;
+  customRange: CustomDateRange | null;
+  onCustomRangeChange: (r: CustomDateRange) => void;
   searchQuery: string;
   onSearchChange: (v: string) => void;
   showDropdown: boolean;
@@ -281,8 +283,10 @@ function TargetAudienceEngine(props: {
     onRemoveInterest,
     selectedPlatform,
     onPlatformChange,
-    selectedYear,
-    onYearChange,
+    dateRange,
+    onDateRangeChange,
+    customRange,
+    onCustomRangeChange,
     searchQuery,
     onSearchChange,
     showDropdown,
@@ -292,6 +296,9 @@ function TargetAudienceEngine(props: {
 
   const country = audienceData[selectedCountry];
   const wrapRef = useRef<HTMLDivElement>(null);
+  const [showCustom, setShowCustom] = useState(false);
+  const [customFrom, setCustomFrom] = useState<string>(customRange ? customRange.from.toISOString().slice(0, 10) : "");
+  const [customTo, setCustomTo] = useState<string>(customRange ? customRange.to.toISOString().slice(0, 10) : "");
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
