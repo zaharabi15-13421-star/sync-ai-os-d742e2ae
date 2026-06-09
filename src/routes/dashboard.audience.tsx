@@ -95,9 +95,10 @@ function AudienceIntelligencePage() {
   }, [country.iso2]);
 
   const metrics = useMemo(
-    () => calculateMetrics(country, selectedPlatform, selectedInterest, wbError ? null : wbData),
-    [country, selectedPlatform, selectedInterest, wbData, wbError],
+    () => calculateMetrics(country, selectedPlatform, primaryInterestId, wbError ? null : wbData),
+    [country, selectedPlatform, primaryInterestId, wbData, wbError],
   );
+
 
   const filteredInterests = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
