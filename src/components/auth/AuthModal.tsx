@@ -462,7 +462,7 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
         data: {
           eventType: "registration_form_submitted",
           userId: res.user_id,
-          metadata: { has_website: Boolean(v.websiteUrl), industry: v.industry, team_size: v.teamSize },
+          metadata: { has_website: false, industry: "", team_size: "" },
         },
       }).catch(() => {});
       toast.success("Account created", { description: "Check your inbox for the verification code." });
