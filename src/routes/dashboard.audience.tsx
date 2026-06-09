@@ -214,8 +214,11 @@ function Header({ onExport }: { onExport: () => void }) {
         <button
           type="button"
           onClick={onExport}
-          className="inline-flex items-center gap-2 rounded-[10px] px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90"
-          style={{ background: TOKENS.purple }}
+          className="inline-flex items-center gap-2 rounded-[10px] px-4 py-2 text-[13px] font-medium text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
+          style={{
+            background: "linear-gradient(135deg, #7C3AED 0%, #9333EA 50%, #06B6D4 100%)",
+            boxShadow: "0 8px 24px -8px rgba(124,58,237,0.55)",
+          }}
         >
           <Download className="h-4 w-4" />
           Export Report
