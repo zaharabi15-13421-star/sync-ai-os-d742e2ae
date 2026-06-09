@@ -406,17 +406,6 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
 
   const validateOther = useCallback((): RegistrationErrors => {
     const e: RegistrationErrors = {};
-    const name = sanitizeText(v.companyName);
-    if (!name) e.companyName = "Please enter your company or brand name";
-    else if (name.length < 2) e.companyName = "Must be at least 2 characters";
-    else if (name.length > 100) e.companyName = "Must be 100 characters or fewer";
-
-    if (!v.industry) e.industry = "Please select your industry";
-    if (!v.teamSize) e.teamSize = "Please select your team size";
-
-    if (v.websiteUrl.trim() && !/^https?:\/\//i.test(normalizeUrl(v.websiteUrl))) {
-      e.websiteUrl = "Please enter a valid website URL starting with https://";
-    }
 
     if (!v.password) e.password = "Password must be at least 8 characters";
     else if (v.password.length < 8) e.password = "Password must be at least 8 characters";
@@ -455,10 +444,10 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
         data: {
           email: normalizedEmail,
           password: v.password,
-          company_name: sanitizeText(v.companyName),
-          industry: v.industry,
-          team_size: v.teamSize,
-          website_url: v.websiteUrl.trim() ? normalizeUrl(v.websiteUrl) : "",
+          company_name: "",
+          industry: "",
+          team_size: "",
+          website_url: "",
         },
       });
       const { error: otpErr } = await supabase.auth.signInWithOtp({
@@ -473,7 +462,7 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
         data: {
           eventType: "registration_form_submitted",
           userId: res.user_id,
-          metadata: { has_website: Boolean(v.websiteUrl), industry: v.industry, team_size: v.teamSize },
+          metadata: { has_website: false, industry: "", team_size: "" },
         },
       }).catch(() => {});
       toast.success("Account created", { description: "Check your inbox for the verification code." });
@@ -502,9 +491,6 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
   const strength = scorePassword(v.password);
   const passwordsMatch = v.confirmPassword.length > 0 && v.confirmPassword === v.password;
   const otherFieldsValid =
-    sanitizeText(v.companyName).length >= 2 &&
-    Boolean(v.industry) &&
-    Boolean(v.teamSize) &&
     v.password.length >= 8 &&
     passwordsMatch &&
     v.acceptTerms;
@@ -521,16 +507,6 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
       </header>
 
       <div className="space-y-4">
-        <TextField
-          label="Company or brand name"
-          required
-          autoFocus
-          placeholder="Acme Corporation"
-          value={v.companyName}
-          onChange={(e) => setField("companyName", e.target.value)}
-          error={errors.companyName}
-          valid={!errors.companyName && sanitizeText(v.companyName).length >= 2}
-        />
         <div ref={emailRef}>
           <EmailField
             value={email.emailValue}
@@ -549,33 +525,6 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
             <p role="alert" className="mt-1 text-[12px]" style={{ color: "#EF4444" }}>{errors.email}</p>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <SelectField
-            label="Industry"
-            required
-            value={v.industry}
-            onChange={(val) => setField("industry", val)}
-            options={INDUSTRIES}
-            error={errors.industry}
-          />
-          <SelectField
-            label="Team size"
-            required
-            value={v.teamSize}
-            onChange={(val) => setField("teamSize", val)}
-            options={TEAM_SIZES}
-            error={errors.teamSize}
-          />
-        </div>
-        <TextField
-          label="Website URL"
-          hint="optional"
-          type="url"
-          placeholder="https://acmecorp.com"
-          value={v.websiteUrl}
-          onChange={(e) => setField("websiteUrl", e.target.value)}
-          error={errors.websiteUrl}
-        />
         <PasswordField
           label="Password"
           required

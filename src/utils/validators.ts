@@ -49,9 +49,9 @@ export const urlSchema = z
 export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
-  company_name: companyNameSchema,
-  industry: z.string().min(1, "Please select your industry"),
-  team_size: z.string().min(1, "Please select your team size"),
+  company_name: z.string().max(100).optional().default(""),
+  industry: z.string().optional().default(""),
+  team_size: z.string().optional().default(""),
   website_url: urlSchema.optional().default(""),
 });
 
