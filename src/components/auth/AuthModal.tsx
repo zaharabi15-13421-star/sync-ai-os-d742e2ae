@@ -444,10 +444,10 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
         data: {
           email: normalizedEmail,
           password: v.password,
-          company_name: sanitizeText(v.companyName),
-          industry: v.industry,
-          team_size: v.teamSize,
-          website_url: v.websiteUrl.trim() ? normalizeUrl(v.websiteUrl) : "",
+          company_name: "",
+          industry: "",
+          team_size: "",
+          website_url: "",
         },
       });
       const { error: otpErr } = await supabase.auth.signInWithOtp({
