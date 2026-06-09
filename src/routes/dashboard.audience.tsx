@@ -260,7 +260,7 @@ function EmptyState({
 }
 
 // ---------- Header ----------
-function Header({ onExport }: { onExport: () => void }) {
+function Header({ onExport, canExport }: { onExport: () => void; canExport: boolean }) {
   return (
     <div
       className="rounded-2xl p-5"
