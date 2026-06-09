@@ -251,10 +251,10 @@ function TargetAudienceEngine(props: {
   selectedInterests: string[];
   onAddInterest: (id: string) => void;
   onRemoveInterest: (id: string) => void;
-  selectedPlatform: PlatformId;
-  onPlatformChange: (p: PlatformId) => void;
-  selectedYear: "2025" | "2024" | "2023";
-  onYearChange: (y: "2025" | "2024" | "2023") => void;
+  selectedPlatform: PlatformId | "";
+  onPlatformChange: (p: PlatformId | "") => void;
+  selectedYear: "2025" | "2024" | "2023" | "";
+  onYearChange: (y: "2025" | "2024" | "2023" | "") => void;
   searchQuery: string;
   onSearchChange: (v: string) => void;
   showDropdown: boolean;
