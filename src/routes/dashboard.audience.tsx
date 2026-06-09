@@ -171,11 +171,11 @@ function AudienceIntelligencePage() {
         metrics={metrics}
         country={country}
         interestLabel={interest.label}
-        platform={selectedPlatform}
+        platform={effectivePlatform}
         wbData={wbData}
         wbLoading={wbLoading}
         wbError={wbError}
-        selectedYear={selectedYear}
+        selectedYear={effectiveYear}
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
@@ -187,16 +187,16 @@ function AudienceIntelligencePage() {
         <AIPredictiveSegments
           country={country}
           interestLabel={interest.label}
-          platform={selectedPlatform}
+          platform={effectivePlatform}
           metrics={metrics}
         />
       </div>
 
-      <PlatformReachGrid country={country} platform={selectedPlatform} />
+      <PlatformReachGrid country={country} platform={effectivePlatform} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <InternetPenetrationChart country={country} wbPenetration={metrics.internetPenetration} />
-        <DemographicsPanel country={country} platform={selectedPlatform} />
+        <DemographicsPanel country={country} platform={effectivePlatform} />
         <ConversionMatrix country={country} interestId={primaryInterestId} />
       </div>
 
