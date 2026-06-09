@@ -457,13 +457,22 @@ function TargetAudienceEngine(props: {
         </div>
 
         <div className="flex items-center gap-1.5">
-          {(["2025", "2024", "2023"] as const).map((y) => {
-            const active = selectedYear === y;
+          {([
+            { id: "7d" as DateRangePreset, label: "Last 7D" },
+            { id: "1m" as DateRangePreset, label: "Last 1M" },
+            { id: "3m" as DateRangePreset, label: "Last 3M" },
+            { id: "1y" as DateRangePreset, label: "Last 1Y" },
+            { id: "custom" as DateRangePreset, label: "📅 Custom" },
+          ]).map((opt) => {
+            const active = dateRange === opt.id;
             return (
               <button
-                key={y}
+                key={opt.id}
                 type="button"
-                onClick={() => onYearChange(active ? "" : y)}
+                onClick={() => {
+                  if (opt.id === "custom") setShowCustom((s) => !s);
+                  else { onDateRangeChange(opt.id); setShowCustom(false); }
+                }}
                 className="rounded-full px-3 py-1.5 text-[12px] font-medium"
                 style={{
                   background: active ? TOKENS.purple : TOKENS.input,
@@ -471,16 +480,59 @@ function TargetAudienceEngine(props: {
                   border: `1px solid ${active ? TOKENS.purple : TOKENS.border}`,
                 }}
               >
-                {y}
+                {opt.label}
               </button>
             );
           })}
         </div>
 
         <span className="text-[11px]" style={{ color: TOKENS.label }}>
-          DataReportal publishes annual reports each January
+          {dateRange === "custom" && customRange
+            ? `${customRange.from.toLocaleDateString()} – ${customRange.to.toLocaleDateString()}`
+            : "Estimates derived from DataReportal annual benchmarks"}
         </span>
       </div>
+
+      {showCustom && (
+        <div
+          className="flex flex-wrap items-end gap-3 rounded-[10px] p-3"
+          style={{ background: TOKENS.input, border: `1px solid ${TOKENS.border}` }}
+        >
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-semibold tracking-wider" style={{ color: TOKENS.label }}>FROM</label>
+            <input
+              type="date"
+              value={customFrom}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              className="rounded-md px-2 py-1.5 text-[12px] outline-none"
+              style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}`, color: TOKENS.text }}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-semibold tracking-wider" style={{ color: TOKENS.label }}>TO</label>
+            <input
+              type="date"
+              value={customTo}
+              onChange={(e) => setCustomTo(e.target.value)}
+              className="rounded-md px-2 py-1.5 text-[12px] outline-none"
+              style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}`, color: TOKENS.text }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (customFrom && customTo) {
+                onCustomRangeChange({ from: new Date(customFrom), to: new Date(customTo) });
+                setShowCustom(false);
+              }
+            }}
+            className="rounded-md px-3 py-1.5 text-[12px] font-medium text-white"
+            style={{ background: TOKENS.purple }}
+          >
+            Apply Range
+          </button>
+        </div>
+      )}
     </div>
   );
 }
