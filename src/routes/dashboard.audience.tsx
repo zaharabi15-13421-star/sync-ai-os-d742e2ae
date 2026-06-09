@@ -58,9 +58,9 @@ function SourceTag({ kind, text }: { kind: SourceKind; text?: string }) {
 
 // ---------- Page ----------
 function AudienceIntelligencePage() {
-  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [selectedCountry, setSelectedCountry] = useState("BD");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [selectedPlatform, setSelectedPlatform] = useState<PlatformId | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<PlatformId>("all");
   const [selectedYear, setSelectedYear] = useState<"2025" | "2024" | "2023">("2025");
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -69,19 +69,13 @@ function AudienceIntelligencePage() {
   const [wbLoading, setWbLoading] = useState(false);
   const [wbError, setWbError] = useState(false);
 
-  const country: CountryData | null = selectedCountry ? audienceData[selectedCountry] ?? null : null;
-  const primaryInterestId = selectedInterests[0] ?? null;
-  const interest = primaryInterestId ? getInterest(primaryInterestId) : null;
+  const country: CountryData = audienceData[selectedCountry] ?? audienceData.BD;
+  // Use first selected interest for metric calculations; fall back to a neutral baseline when none selected.
+  const primaryInterestId = selectedInterests[0] ?? "business";
+  const interest = getInterest(primaryInterestId);
 
-  const ready = Boolean(country && selectedPlatform && selectedInterests.length > 0);
 
   useEffect(() => {
-    if (!country) {
-      setWbData(null);
-      setWbError(false);
-      setWbLoading(false);
-      return;
-    }
     let cancelled = false;
     setWbLoading(true);
     setWbError(false);
@@ -98,14 +92,11 @@ function AudienceIntelligencePage() {
     return () => {
       cancelled = true;
     };
-  }, [country]);
+  }, [country.iso2]);
 
   const metrics = useMemo(
-    () =>
-      ready && country && selectedPlatform && primaryInterestId
-        ? calculateMetrics(country, selectedPlatform, primaryInterestId, wbError ? null : wbData)
-        : null,
-    [ready, country, selectedPlatform, primaryInterestId, wbData, wbError],
+    () => calculateMetrics(country, selectedPlatform, primaryInterestId, wbError ? null : wbData),
+    [country, selectedPlatform, primaryInterestId, wbData, wbError],
   );
 
 
@@ -116,7 +107,6 @@ function AudienceIntelligencePage() {
   }, [searchQuery]);
 
   const handleExportCsv = () => {
-    if (!ready || !country || !metrics || !selectedPlatform || !interest) return;
     const rows: string[][] = [
       ["Metric", "Value", "Source"],
       ["Country", country.name, "DR"],
@@ -148,7 +138,7 @@ function AudienceIntelligencePage() {
 
   return (
     <div className="space-y-6" style={{ color: TOKENS.text }}>
-      <Header onExport={handleExportCsv} canExport={ready} />
+      <Header onExport={handleExportCsv} />
 
       <TargetAudienceEngine
         countries={Object.values(audienceData)}
@@ -167,100 +157,54 @@ function AudienceIntelligencePage() {
         onPlatformChange={setSelectedPlatform}
         selectedYear={selectedYear}
         onYearChange={setSelectedYear}
+
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         showDropdown={showDropdown}
         onShowDropdown={setShowDropdown}
         filteredInterests={filteredInterests}
-        country={country}
       />
 
-      {ready && country && metrics && selectedPlatform && interest ? (
-        <>
-          <StatsRow
-            metrics={metrics}
-            country={country}
-            interestLabel={interest.label}
-            platform={selectedPlatform}
-            wbData={wbData}
-            wbLoading={wbLoading}
-            wbError={wbError}
-            selectedYear={selectedYear}
-          />
+      <StatsRow
+        metrics={metrics}
+        country={country}
+        interestLabel={interest.label}
+        platform={selectedPlatform}
+        wbData={wbData}
+        wbLoading={wbLoading}
+        wbError={wbError}
+        selectedYear={selectedYear}
+      />
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
-            <GeoIntentMap
-              country={country}
-              interestPercent={metrics.interestPercent}
-              wbPenetration={metrics.internetPenetration}
-            />
-            <AIPredictiveSegments
-              country={country}
-              interestLabel={interest.label}
-              platform={selectedPlatform}
-              metrics={metrics}
-            />
-          </div>
-
-          <PlatformReachGrid country={country} platform={selectedPlatform} />
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <InternetPenetrationChart country={country} wbPenetration={metrics.internetPenetration} />
-            <DemographicsPanel country={country} platform={selectedPlatform} />
-            <ConversionMatrix country={country} interestId={primaryInterestId!} />
-          </div>
-        </>
-      ) : (
-        <EmptyState
-          hasCountry={Boolean(country)}
-          hasPlatform={Boolean(selectedPlatform)}
-          hasInterest={selectedInterests.length > 0}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <GeoIntentMap
+          country={country}
+          interestPercent={metrics.interestPercent}
+          wbPenetration={metrics.internetPenetration}
         />
-      )}
+        <AIPredictiveSegments
+          country={country}
+          interestLabel={interest.label}
+          platform={selectedPlatform}
+          metrics={metrics}
+        />
+      </div>
+
+      <PlatformReachGrid country={country} platform={selectedPlatform} />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <InternetPenetrationChart country={country} wbPenetration={metrics.internetPenetration} />
+        <DemographicsPanel country={country} platform={selectedPlatform} />
+        <ConversionMatrix country={country} interestId={primaryInterestId} />
+      </div>
 
       <TransparencyFooter />
     </div>
   );
 }
 
-function EmptyState({
-  hasCountry,
-  hasPlatform,
-  hasInterest,
-}: {
-  hasCountry: boolean;
-  hasPlatform: boolean;
-  hasInterest: boolean;
-}) {
-  const missing: string[] = [];
-  if (!hasInterest) missing.push("a target audience or interest");
-  if (!hasCountry) missing.push("a country");
-  if (!hasPlatform) missing.push("a social media channel");
-  return (
-    <div
-      className="flex flex-col items-center justify-center gap-3 rounded-2xl px-6 py-16 text-center"
-      style={{ background: TOKENS.card, border: `1px dashed ${TOKENS.border}` }}
-    >
-      <div
-        className="flex h-12 w-12 items-center justify-center rounded-full"
-        style={{ background: "rgba(124,58,237,0.15)" }}
-      >
-        <Search className="h-5 w-5" style={{ color: TOKENS.purpleLight }} />
-      </div>
-      <h3 className="text-[15px] font-semibold" style={{ color: TOKENS.text }}>
-        Select your parameters to begin
-      </h3>
-      <p className="max-w-md text-[12px]" style={{ color: TOKENS.muted }}>
-        {missing.length > 0
-          ? `Please choose ${missing.join(", ")} above to load audience insights.`
-          : "Loading insights…"}
-      </p>
-    </div>
-  );
-}
-
 // ---------- Header ----------
-function Header({ onExport, canExport }: { onExport: () => void; canExport: boolean }) {
+function Header({ onExport }: { onExport: () => void }) {
   return (
     <div
       className="rounded-2xl p-5"
@@ -278,8 +222,7 @@ function Header({ onExport, canExport }: { onExport: () => void; canExport: bool
         <button
           type="button"
           onClick={onExport}
-          disabled={!canExport}
-          className="inline-flex items-center gap-2 rounded-[10px] px-4 py-2 text-[13px] font-medium text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+          className="inline-flex items-center gap-2 rounded-[10px] px-4 py-2 text-[13px] font-medium text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
           style={{
             background: "linear-gradient(135deg, #7C3AED 0%, #9333EA 50%, #06B6D4 100%)",
             boxShadow: "0 8px 24px -8px rgba(124,58,237,0.55)",
@@ -306,7 +249,7 @@ function TargetAudienceEngine(props: {
   selectedInterests: string[];
   onAddInterest: (id: string) => void;
   onRemoveInterest: (id: string) => void;
-  selectedPlatform: PlatformId | null;
+  selectedPlatform: PlatformId;
   onPlatformChange: (p: PlatformId) => void;
   selectedYear: "2025" | "2024" | "2023";
   onYearChange: (y: "2025" | "2024" | "2023") => void;
@@ -315,7 +258,6 @@ function TargetAudienceEngine(props: {
   showDropdown: boolean;
   onShowDropdown: (b: boolean) => void;
   filteredInterests: typeof INTEREST_CATEGORIES;
-  country: CountryData | null;
 }) {
   const {
     countries,
@@ -333,9 +275,9 @@ function TargetAudienceEngine(props: {
     showDropdown,
     onShowDropdown,
     filteredInterests,
-    country,
   } = props;
 
+  const country = audienceData[selectedCountry];
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -390,8 +332,8 @@ function TargetAudienceEngine(props: {
               </div>
             )}
             {filteredInterests.map((i) => {
-              const reachBase = country?.socialMediaUsers ?? 0;
-              const audSize = reachBase > 0 ? Math.round((reachBase * i.basePercent) / 100) : 0;
+              const reachBase = country.socialMediaUsers;
+              const audSize = Math.round((reachBase * i.basePercent) / 100);
               const alreadySelected = selectedInterests.includes(i.id);
               const trendIcon =
                 i.trend === "growing" ? (
@@ -419,7 +361,7 @@ function TargetAudienceEngine(props: {
                     )}
                   </span>
                   <span className="flex items-center gap-2 text-[11px]" style={{ color: TOKENS.muted }}>
-                    {reachBase > 0 ? `~${formatNumber(audSize)}` : ""} {trendIcon}
+                    ~{formatNumber(audSize)} {trendIcon}
                   </span>
                 </button>
               );
@@ -467,9 +409,6 @@ function TargetAudienceEngine(props: {
             minWidth: 200,
           }}
         >
-          <option value="" disabled>
-            Select a country…
-          </option>
           {countries.map((c) => (
             <option key={c.iso2} value={c.iso2}>
               {c.flag} {c.name}
