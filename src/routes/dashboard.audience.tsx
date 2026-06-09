@@ -176,6 +176,7 @@ function AudienceIntelligencePage() {
         wbLoading={wbLoading}
         wbError={wbError}
         selectedYear={effectiveYear}
+        countrySelected={!!selectedCountry}
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
@@ -183,6 +184,7 @@ function AudienceIntelligencePage() {
           country={country}
           interestPercent={metrics.interestPercent}
           wbPenetration={metrics.internetPenetration}
+          countrySelected={!!selectedCountry}
         />
         <AIPredictiveSegments
           country={country}
@@ -480,8 +482,9 @@ function StatsRow(props: {
   wbLoading: boolean;
   wbError: boolean;
   selectedYear: string;
+  countrySelected: boolean;
 }) {
-  const { metrics, country, interestLabel, platform, wbData, wbLoading, wbError, selectedYear } = props;
+  const { metrics, country, interestLabel, platform, wbData, wbLoading, wbError, selectedYear, countrySelected } = props;
   const opportunityColors: Record<string, string> = {
     Excellent: TOKENS.success,
     Good: "#14B8A6",
@@ -490,19 +493,21 @@ function StatsRow(props: {
   };
   const wbUsable = wbData && !wbError;
   const prevYear = String(Number(selectedYear) - 1);
+  const EMPTY = <span style={{ color: TOKENS.label }}>—</span>;
+  const emptySub = "Select a country to view data";
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
       <StatCard
         label="PLATFORM AUDIENCE"
-        value={formatNumber(metrics.platformAudience)}
-        sub={metrics.platformAudienceLabel}
+        value={countrySelected ? formatNumber(metrics.platformAudience) : EMPTY}
+        sub={countrySelected ? metrics.platformAudienceLabel : emptySub}
         tag={<SourceTag kind="DR" text="DataReportal 2025" />}
       />
       <StatCard
         label="INTERNET USERS"
         value={
-          wbLoading ? (
+          !countrySelected ? EMPTY : wbLoading ? (
             <span
               className="inline-block h-6 w-24 animate-pulse rounded"
               style={{ background: TOKENS.input }}
@@ -511,7 +516,7 @@ function StatsRow(props: {
             `${metrics.internetPenetration.toFixed(1)}%`
           )
         }
-        sub={`${formatNumber(metrics.internetUsers)} of ${formatNumber(metrics.totalPopulation)} total population`}
+        sub={countrySelected ? `${formatNumber(metrics.internetUsers)} of ${formatNumber(metrics.totalPopulation)} total population` : emptySub}
         tag={
           wbUsable ? (
             <SourceTag kind="WB" text={`WorldBank ${wbData.lastUpdated}`} />
@@ -522,30 +527,32 @@ function StatsRow(props: {
       />
       <StatCard
         label="EST. ADDRESSABLE AUDIENCE"
-        value={<span style={{ color: TOKENS.success }}>~{formatNumber(metrics.addressableAudience)}</span>}
-        sub={`${interestLabel} in ${country.name}`}
+        value={countrySelected
+          ? <span style={{ color: TOKENS.success }}>~{formatNumber(metrics.addressableAudience)}</span>
+          : EMPTY}
+        sub={countrySelected ? `${interestLabel} in ${country.name}` : emptySub}
         tag={<SourceTag kind="AI" text={`DR base × AI ${metrics.interestPercent}%`} />}
         note="AI estimate — not platform data"
       />
       <StatCard
         label="YoY AUDIENCE GROWTH"
-        value={
+        value={countrySelected ? (
           <span style={{ color: metrics.avgYoyGrowth >= 0 ? TOKENS.success : TOKENS.danger }}>
             {metrics.avgYoyGrowth >= 0 ? "+" : ""}
             {metrics.avgYoyGrowth.toFixed(1)}%
           </span>
-        }
-        sub={`Social media growth ${selectedYear} vs ${prevYear}`}
+        ) : EMPTY}
+        sub={countrySelected ? `Social media growth ${selectedYear} vs ${prevYear}` : emptySub}
         tag={<SourceTag kind="DR" text="DataReportal 2025" />}
       />
       <StatCard
         label="MARKET OPPORTUNITY"
-        value={
+        value={countrySelected ? (
           <span style={{ color: opportunityColors[metrics.opportunityLabel] }}>
             {metrics.opportunityLabel}
           </span>
-        }
-        sub={`Score ${metrics.opportunityScore}/100 · ${metrics.opportunityKeyFactor}`}
+        ) : EMPTY}
+        sub={countrySelected ? `Score ${metrics.opportunityScore}/100 · ${metrics.opportunityKeyFactor}` : emptySub}
         tag={<SourceTag kind="CALC" text="DR growth + WB penetration" />}
       />
       <input type="hidden" value={platform} readOnly />
@@ -595,10 +602,12 @@ function GeoIntentMap({
   country,
   interestPercent,
   wbPenetration,
+  countrySelected,
 }: {
   country: CountryData;
   interestPercent: number;
   wbPenetration: number;
+  countrySelected: boolean;
 }) {
   const [hovered, setHovered] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -680,7 +689,7 @@ function GeoIntentMap({
         {positioned.map((row, idx) => (
           <div
             key={row.city.name}
-            className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full transition-transform hover:scale-110"
+            className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform"
             style={{
               left: `${row.pos.x}%`,
               top: `${row.pos.y}%`,
@@ -690,21 +699,24 @@ function GeoIntentMap({
               border: `2px solid ${row.color}`,
               boxShadow: `0 0 16px ${row.color}66`,
               zIndex: hovered === idx ? 5 : 2,
+              cursor: countrySelected ? "pointer" : "default",
             }}
-            onMouseEnter={() => setHovered(idx)}
-            onMouseLeave={() => setHovered(null)}
+            onMouseEnter={() => countrySelected && setHovered(idx)}
+            onMouseLeave={() => countrySelected && setHovered(null)}
           >
-            <div
-              className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium"
-              style={{ color: TOKENS.text }}
-            >
-              {row.city.name} · {row.score}%
-            </div>
+            {countrySelected && (
+              <div
+                className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium"
+                style={{ color: TOKENS.text }}
+              >
+                {row.city.name} · {row.score}%
+              </div>
+            )}
           </div>
         ))}
 
         {/* Tooltip overlay — rendered above all bubbles with smart positioning */}
-        {hovered !== null && (() => {
+        {countrySelected && hovered !== null && (() => {
           const row = positioned[hovered];
           const w = containerRef.current?.clientWidth ?? 600;
           const h = containerRef.current?.clientHeight ?? 460;
@@ -1025,13 +1037,24 @@ function CircularDial({ percent, color }: { percent: number; color: string }) {
 }
 
 function PlatformReachGrid({ country, platform }: { country: CountryData; platform: PlatformId }) {
-  const items: Array<{ key: PlatformId; name: string }> = [
+  const ALL_ITEMS: Array<{ key: PlatformId; name: string }> = [
     { key: "facebook", name: "Facebook" },
+    { key: "instagram", name: "Instagram" },
     { key: "tiktok", name: "TikTok" },
     { key: "youtube", name: "YouTube" },
     { key: "whatsapp", name: "WhatsApp" },
+    { key: "linkedin", name: "LinkedIn" },
   ];
-  if (platform === "linkedin") items.push({ key: "linkedin", name: "LinkedIn" });
+  // Meta tab = Facebook + Instagram only; single-platform tabs show just that platform.
+  const items: Array<{ key: PlatformId; name: string }> =
+    platform === "all"
+      ? ALL_ITEMS
+      : platform === "facebook"
+        ? [
+            { key: "facebook", name: "Facebook" },
+            { key: "instagram", name: "Instagram" },
+          ]
+        : ALL_ITEMS.filter((i) => i.key === platform);
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
