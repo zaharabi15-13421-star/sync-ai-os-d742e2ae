@@ -144,16 +144,20 @@ function AudienceIntelligencePage() {
         countries={Object.values(audienceData)}
         selectedCountry={selectedCountry}
         onCountryChange={setSelectedCountry}
-        selectedInterest={selectedInterest}
-        onInterestChange={(id) => {
-          setSelectedInterest(id);
+        selectedInterests={selectedInterests}
+        onAddInterest={(id) => {
+          setSelectedInterests((prev) => (prev.includes(id) ? prev : [...prev, id]));
           setSearchQuery("");
           setShowDropdown(false);
         }}
+        onRemoveInterest={(id) =>
+          setSelectedInterests((prev) => prev.filter((x) => x !== id))
+        }
         selectedPlatform={selectedPlatform}
         onPlatformChange={setSelectedPlatform}
         selectedYear={selectedYear}
         onYearChange={setSelectedYear}
+
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         showDropdown={showDropdown}
