@@ -768,11 +768,11 @@ type Segment = {
 };
 
 const BADGE_STYLES: Record<Segment["badge"], { bg: string; color: string }> = {
-  GROWING: { bg: "#064E3B", color: "#6EE7B7" },
-  EMERGING: { bg: "#1E3A5F", color: "#60A5FA" },
-  OPPORTUNITY: { bg: "#2D1B4E", color: "#C084FC" },
-  STABLE: { bg: "#1E293B", color: "#94A3B8" },
-  SEASONAL: { bg: "#422006", color: "#FBBF24" },
+  GROWING: { bg: "rgba(52,211,153,0.15)", color: "#6EE7B7" },
+  EMERGING: { bg: "rgba(6,182,212,0.15)", color: "#67E8F9" },
+  OPPORTUNITY: { bg: "rgba(124,58,237,0.18)", color: "#C4B5FD" },
+  STABLE: { bg: "rgba(148,163,184,0.12)", color: "#CBD5E1" },
+  SEASONAL: { bg: "rgba(236,72,153,0.15)", color: "#F9A8D4" },
 };
 
 function scoreColor(score: number) {
