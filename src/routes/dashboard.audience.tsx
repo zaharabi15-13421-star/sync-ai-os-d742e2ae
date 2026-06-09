@@ -58,9 +58,9 @@ function SourceTag({ kind, text }: { kind: SourceKind; text?: string }) {
 
 // ---------- Page ----------
 function AudienceIntelligencePage() {
-  const [selectedCountry, setSelectedCountry] = useState("BD");
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [selectedPlatform, setSelectedPlatform] = useState<PlatformId>("all");
+  const [selectedPlatform, setSelectedPlatform] = useState<PlatformId | null>(null);
   const [selectedYear, setSelectedYear] = useState<"2025" | "2024" | "2023">("2025");
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -69,13 +69,19 @@ function AudienceIntelligencePage() {
   const [wbLoading, setWbLoading] = useState(false);
   const [wbError, setWbError] = useState(false);
 
-  const country: CountryData = audienceData[selectedCountry] ?? audienceData.BD;
-  // Use first selected interest for metric calculations; fall back to a neutral baseline when none selected.
-  const primaryInterestId = selectedInterests[0] ?? "business";
-  const interest = getInterest(primaryInterestId);
+  const country: CountryData | null = selectedCountry ? audienceData[selectedCountry] ?? null : null;
+  const primaryInterestId = selectedInterests[0] ?? null;
+  const interest = primaryInterestId ? getInterest(primaryInterestId) : null;
 
+  const ready = Boolean(country && selectedPlatform && selectedInterests.length > 0);
 
   useEffect(() => {
+    if (!country) {
+      setWbData(null);
+      setWbError(false);
+      setWbLoading(false);
+      return;
+    }
     let cancelled = false;
     setWbLoading(true);
     setWbError(false);
@@ -92,11 +98,14 @@ function AudienceIntelligencePage() {
     return () => {
       cancelled = true;
     };
-  }, [country.iso2]);
+  }, [country]);
 
   const metrics = useMemo(
-    () => calculateMetrics(country, selectedPlatform, primaryInterestId, wbError ? null : wbData),
-    [country, selectedPlatform, primaryInterestId, wbData, wbError],
+    () =>
+      ready && country && selectedPlatform && primaryInterestId
+        ? calculateMetrics(country, selectedPlatform, primaryInterestId, wbError ? null : wbData)
+        : null,
+    [ready, country, selectedPlatform, primaryInterestId, wbData, wbError],
   );
 
 
@@ -107,6 +116,7 @@ function AudienceIntelligencePage() {
   }, [searchQuery]);
 
   const handleExportCsv = () => {
+    if (!ready || !country || !metrics || !selectedPlatform || !interest) return;
     const rows: string[][] = [
       ["Metric", "Value", "Source"],
       ["Country", country.name, "DR"],
@@ -138,7 +148,7 @@ function AudienceIntelligencePage() {
 
   return (
     <div className="space-y-6" style={{ color: TOKENS.text }}>
-      <Header onExport={handleExportCsv} />
+      <Header onExport={handleExportCsv} canExport={ready} />
 
       <TargetAudienceEngine
         countries={Object.values(audienceData)}
@@ -157,48 +167,94 @@ function AudienceIntelligencePage() {
         onPlatformChange={setSelectedPlatform}
         selectedYear={selectedYear}
         onYearChange={setSelectedYear}
-
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         showDropdown={showDropdown}
         onShowDropdown={setShowDropdown}
         filteredInterests={filteredInterests}
-      />
-
-      <StatsRow
-        metrics={metrics}
         country={country}
-        interestLabel={interest.label}
-        platform={selectedPlatform}
-        wbData={wbData}
-        wbLoading={wbLoading}
-        wbError={wbError}
-        selectedYear={selectedYear}
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <GeoIntentMap
-          country={country}
-          interestPercent={metrics.interestPercent}
-          wbPenetration={metrics.internetPenetration}
-        />
-        <AIPredictiveSegments
-          country={country}
-          interestLabel={interest.label}
-          platform={selectedPlatform}
-          metrics={metrics}
-        />
-      </div>
+      {ready && country && metrics && selectedPlatform && interest ? (
+        <>
+          <StatsRow
+            metrics={metrics}
+            country={country}
+            interestLabel={interest.label}
+            platform={selectedPlatform}
+            wbData={wbData}
+            wbLoading={wbLoading}
+            wbError={wbError}
+            selectedYear={selectedYear}
+          />
 
-      <PlatformReachGrid country={country} platform={selectedPlatform} />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
+            <GeoIntentMap
+              country={country}
+              interestPercent={metrics.interestPercent}
+              wbPenetration={metrics.internetPenetration}
+            />
+            <AIPredictiveSegments
+              country={country}
+              interestLabel={interest.label}
+              platform={selectedPlatform}
+              metrics={metrics}
+            />
+          </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <InternetPenetrationChart country={country} wbPenetration={metrics.internetPenetration} />
-        <DemographicsPanel country={country} platform={selectedPlatform} />
-        <ConversionMatrix country={country} interestId={primaryInterestId} />
-      </div>
+          <PlatformReachGrid country={country} platform={selectedPlatform} />
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <InternetPenetrationChart country={country} wbPenetration={metrics.internetPenetration} />
+            <DemographicsPanel country={country} platform={selectedPlatform} />
+            <ConversionMatrix country={country} interestId={primaryInterestId!} />
+          </div>
+        </>
+      ) : (
+        <EmptyState
+          hasCountry={Boolean(country)}
+          hasPlatform={Boolean(selectedPlatform)}
+          hasInterest={selectedInterests.length > 0}
+        />
+      )}
 
       <TransparencyFooter />
+    </div>
+  );
+}
+
+function EmptyState({
+  hasCountry,
+  hasPlatform,
+  hasInterest,
+}: {
+  hasCountry: boolean;
+  hasPlatform: boolean;
+  hasInterest: boolean;
+}) {
+  const missing: string[] = [];
+  if (!hasInterest) missing.push("a target audience or interest");
+  if (!hasCountry) missing.push("a country");
+  if (!hasPlatform) missing.push("a social media channel");
+  return (
+    <div
+      className="flex flex-col items-center justify-center gap-3 rounded-2xl px-6 py-16 text-center"
+      style={{ background: TOKENS.card, border: `1px dashed ${TOKENS.border}` }}
+    >
+      <div
+        className="flex h-12 w-12 items-center justify-center rounded-full"
+        style={{ background: "rgba(124,58,237,0.15)" }}
+      >
+        <Search className="h-5 w-5" style={{ color: TOKENS.purpleLight }} />
+      </div>
+      <h3 className="text-[15px] font-semibold" style={{ color: TOKENS.text }}>
+        Select your parameters to begin
+      </h3>
+      <p className="max-w-md text-[12px]" style={{ color: TOKENS.muted }}>
+        {missing.length > 0
+          ? `Please choose ${missing.join(", ")} above to load audience insights.`
+          : "Loading insights…"}
+      </p>
     </div>
   );
 }
