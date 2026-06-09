@@ -1037,13 +1037,24 @@ function CircularDial({ percent, color }: { percent: number; color: string }) {
 }
 
 function PlatformReachGrid({ country, platform }: { country: CountryData; platform: PlatformId }) {
-  const items: Array<{ key: PlatformId; name: string }> = [
+  const ALL_ITEMS: Array<{ key: PlatformId; name: string }> = [
     { key: "facebook", name: "Facebook" },
+    { key: "instagram", name: "Instagram" },
     { key: "tiktok", name: "TikTok" },
     { key: "youtube", name: "YouTube" },
     { key: "whatsapp", name: "WhatsApp" },
+    { key: "linkedin", name: "LinkedIn" },
   ];
-  if (platform === "linkedin") items.push({ key: "linkedin", name: "LinkedIn" });
+  // Meta tab = Facebook + Instagram only; single-platform tabs show just that platform.
+  const items: Array<{ key: PlatformId; name: string }> =
+    platform === "all"
+      ? ALL_ITEMS
+      : platform === "facebook"
+        ? [
+            { key: "facebook", name: "Facebook" },
+            { key: "instagram", name: "Instagram" },
+          ]
+        : ALL_ITEMS.filter((i) => i.key === platform);
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
