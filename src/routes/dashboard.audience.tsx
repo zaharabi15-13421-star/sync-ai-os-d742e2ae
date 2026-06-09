@@ -602,10 +602,12 @@ function GeoIntentMap({
   country,
   interestPercent,
   wbPenetration,
+  countrySelected,
 }: {
   country: CountryData;
   interestPercent: number;
   wbPenetration: number;
+  countrySelected: boolean;
 }) {
   const [hovered, setHovered] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
