@@ -58,10 +58,10 @@ function SourceTag({ kind, text }: { kind: SourceKind; text?: string }) {
 
 // ---------- Page ----------
 function AudienceIntelligencePage() {
-  const [selectedCountry, setSelectedCountry] = useState("BD");
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [selectedPlatform, setSelectedPlatform] = useState<PlatformId>("all");
-  const [selectedYear, setSelectedYear] = useState<"2025" | "2024" | "2023">("2025");
+  const [selectedPlatform, setSelectedPlatform] = useState<PlatformId | "">("");
+  const [selectedYear, setSelectedYear] = useState<"2025" | "2024" | "2023" | "">("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -69,8 +69,10 @@ function AudienceIntelligencePage() {
   const [wbLoading, setWbLoading] = useState(false);
   const [wbError, setWbError] = useState(false);
 
+  // Downstream calculations need concrete values; fall back to neutral baselines when nothing is selected.
   const country: CountryData = audienceData[selectedCountry] ?? audienceData.BD;
-  // Use first selected interest for metric calculations; fall back to a neutral baseline when none selected.
+  const effectivePlatform: PlatformId = (selectedPlatform || "all") as PlatformId;
+  const effectiveYear: "2025" | "2024" | "2023" = selectedYear || "2025";
   const primaryInterestId = selectedInterests[0] ?? "business";
   const interest = getInterest(primaryInterestId);
 
@@ -95,8 +97,8 @@ function AudienceIntelligencePage() {
   }, [country.iso2]);
 
   const metrics = useMemo(
-    () => calculateMetrics(country, selectedPlatform, primaryInterestId, wbError ? null : wbData),
-    [country, selectedPlatform, primaryInterestId, wbData, wbError],
+    () => calculateMetrics(country, effectivePlatform, primaryInterestId, wbError ? null : wbData),
+    [country, effectivePlatform, primaryInterestId, wbData, wbError],
   );
 
 
@@ -110,7 +112,7 @@ function AudienceIntelligencePage() {
     const rows: string[][] = [
       ["Metric", "Value", "Source"],
       ["Country", country.name, "DR"],
-      ["Selected Platform", selectedPlatform, "—"],
+      ["Selected Platform", selectedPlatform || "—", "—"],
       ["Selected Interest", interest.label, "AI"],
       ["Platform Audience", String(metrics.platformAudience), "DR"],
       ["Internet Users", String(metrics.internetUsers), wbError || !wbData ? "DR" : "WB"],
@@ -169,11 +171,11 @@ function AudienceIntelligencePage() {
         metrics={metrics}
         country={country}
         interestLabel={interest.label}
-        platform={selectedPlatform}
+        platform={effectivePlatform}
         wbData={wbData}
         wbLoading={wbLoading}
         wbError={wbError}
-        selectedYear={selectedYear}
+        selectedYear={effectiveYear}
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
@@ -185,16 +187,16 @@ function AudienceIntelligencePage() {
         <AIPredictiveSegments
           country={country}
           interestLabel={interest.label}
-          platform={selectedPlatform}
+          platform={effectivePlatform}
           metrics={metrics}
         />
       </div>
 
-      <PlatformReachGrid country={country} platform={selectedPlatform} />
+      <PlatformReachGrid country={country} platform={effectivePlatform} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <InternetPenetrationChart country={country} wbPenetration={metrics.internetPenetration} />
-        <DemographicsPanel country={country} platform={selectedPlatform} />
+        <DemographicsPanel country={country} platform={effectivePlatform} />
         <ConversionMatrix country={country} interestId={primaryInterestId} />
       </div>
 
@@ -249,10 +251,10 @@ function TargetAudienceEngine(props: {
   selectedInterests: string[];
   onAddInterest: (id: string) => void;
   onRemoveInterest: (id: string) => void;
-  selectedPlatform: PlatformId;
-  onPlatformChange: (p: PlatformId) => void;
-  selectedYear: "2025" | "2024" | "2023";
-  onYearChange: (y: "2025" | "2024" | "2023") => void;
+  selectedPlatform: PlatformId | "";
+  onPlatformChange: (p: PlatformId | "") => void;
+  selectedYear: "2025" | "2024" | "2023" | "";
+  onYearChange: (y: "2025" | "2024" | "2023" | "") => void;
   searchQuery: string;
   onSearchChange: (v: string) => void;
   showDropdown: boolean;
@@ -324,10 +326,10 @@ function TargetAudienceEngine(props: {
         {showDropdown && (
           <div
             className="absolute z-30 mt-1 max-h-72 w-full overflow-auto rounded-[10px] shadow-xl"
-            style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}` }}
+            style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.08)", color: "#000" }}
           >
             {filteredInterests.length === 0 && (
-              <div className="px-3 py-2 text-[12px]" style={{ color: TOKENS.muted }}>
+              <div className="px-3 py-2 text-[12px]" style={{ color: "#374151" }}>
                 No matching interests
               </div>
             )}
@@ -337,11 +339,11 @@ function TargetAudienceEngine(props: {
               const alreadySelected = selectedInterests.includes(i.id);
               const trendIcon =
                 i.trend === "growing" ? (
-                  <TrendingUp className="h-3 w-3" style={{ color: TOKENS.success }} />
+                  <TrendingUp className="h-3 w-3" style={{ color: "#059669" }} />
                 ) : i.trend === "declining" ? (
-                  <TrendingDown className="h-3 w-3" style={{ color: TOKENS.danger }} />
+                  <TrendingDown className="h-3 w-3" style={{ color: "#dc2626" }} />
                 ) : (
-                  <Minus className="h-3 w-3" style={{ color: TOKENS.muted }} />
+                  <Minus className="h-3 w-3" style={{ color: "#6b7280" }} />
                 );
               return (
                 <button
@@ -349,18 +351,18 @@ function TargetAudienceEngine(props: {
                   type="button"
                   disabled={alreadySelected}
                   onClick={() => onAddInterest(i.id)}
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] hover:bg-white/5 disabled:opacity-50"
-                  style={{ color: TOKENS.text }}
+                  className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] hover:bg-black/5 disabled:opacity-50"
+                  style={{ color: "#000" }}
                 >
                   <span>
                     {i.label}
                     {alreadySelected && (
-                      <span className="ml-2 text-[10px]" style={{ color: TOKENS.muted }}>
+                      <span className="ml-2 text-[10px]" style={{ color: "#6b7280" }}>
                         (added)
                       </span>
                     )}
                   </span>
-                  <span className="flex items-center gap-2 text-[11px]" style={{ color: TOKENS.muted }}>
+                  <span className="flex items-center gap-2 text-[11px]" style={{ color: "#6b7280" }}>
                     ~{formatNumber(audSize)} {trendIcon}
                   </span>
                 </button>
@@ -409,8 +411,9 @@ function TargetAudienceEngine(props: {
             minWidth: 200,
           }}
         >
+          <option value="">Select a country…</option>
           {countries.map((c) => (
-            <option key={c.iso2} value={c.iso2}>
+            <option key={c.iso2} value={c.iso2} style={{ color: "#000", background: "#fff" }}>
               {c.flag} {c.name}
             </option>
           ))}
@@ -423,7 +426,7 @@ function TargetAudienceEngine(props: {
               <button
                 key={p.id}
                 type="button"
-                onClick={() => onPlatformChange(p.id)}
+                onClick={() => onPlatformChange(active ? "" : p.id)}
                 className="rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors"
                 style={{
                   background: active ? TOKENS.purple : TOKENS.input,
@@ -444,7 +447,7 @@ function TargetAudienceEngine(props: {
               <button
                 key={y}
                 type="button"
-                onClick={() => onYearChange(y)}
+                onClick={() => onYearChange(active ? "" : y)}
                 className="rounded-full px-3 py-1.5 text-[12px] font-medium"
                 style={{
                   background: active ? TOKENS.purple : TOKENS.input,
