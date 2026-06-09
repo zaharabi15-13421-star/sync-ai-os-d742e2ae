@@ -58,10 +58,10 @@ function SourceTag({ kind, text }: { kind: SourceKind; text?: string }) {
 
 // ---------- Page ----------
 function AudienceIntelligencePage() {
-  const [selectedCountry, setSelectedCountry] = useState("BD");
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [selectedPlatform, setSelectedPlatform] = useState<PlatformId>("all");
-  const [selectedYear, setSelectedYear] = useState<"2025" | "2024" | "2023">("2025");
+  const [selectedPlatform, setSelectedPlatform] = useState<PlatformId | "">("");
+  const [selectedYear, setSelectedYear] = useState<"2025" | "2024" | "2023" | "">("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -69,8 +69,10 @@ function AudienceIntelligencePage() {
   const [wbLoading, setWbLoading] = useState(false);
   const [wbError, setWbError] = useState(false);
 
+  // Downstream calculations need concrete values; fall back to neutral baselines when nothing is selected.
   const country: CountryData = audienceData[selectedCountry] ?? audienceData.BD;
-  // Use first selected interest for metric calculations; fall back to a neutral baseline when none selected.
+  const effectivePlatform: PlatformId = (selectedPlatform || "all") as PlatformId;
+  const effectiveYear: "2025" | "2024" | "2023" = selectedYear || "2025";
   const primaryInterestId = selectedInterests[0] ?? "business";
   const interest = getInterest(primaryInterestId);
 
