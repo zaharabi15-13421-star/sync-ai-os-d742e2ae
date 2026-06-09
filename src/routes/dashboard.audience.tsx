@@ -380,7 +380,7 @@ function TargetAudienceEngine(props: {
               </div>
             )}
             {filteredInterests.map((i) => {
-              const reachBase = country.socialMediaUsers;
+              const reachBase = country?.socialMediaUsers ?? 0;
               const audSize = Math.round((reachBase * i.basePercent) / 100);
               const alreadySelected = selectedInterests.includes(i.id);
               const trendIcon =
