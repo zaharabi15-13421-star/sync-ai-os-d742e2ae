@@ -1003,7 +1003,7 @@ function PlatformReachGrid({ country, platform }: { country: CountryData; platfo
   if (platform === "linkedin") items.push({ key: "linkedin", name: "LinkedIn" });
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {items.map(({ key, name }) => {
         const isWhatsApp = key === "whatsapp";
         const data = country.platforms[key as Exclude<PlatformId, "all">];
