@@ -26,7 +26,6 @@ import { Route as DashboardCampaignsRouteImport } from './routes/dashboard.campa
 import { Route as DashboardBrandGuidelineRouteImport } from './routes/dashboard.brand-guideline'
 import { Route as DashboardBrandDnaSetupRouteImport } from './routes/dashboard.brand-dna-setup'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
-import { Route as DashboardAudienceRouteImport } from './routes/dashboard.audience'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard.analytics'
 import { Route as BrandBookSlugRouteImport } from './routes/brand-book.$slug'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -122,11 +121,6 @@ const DashboardBillingRoute = DashboardBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardAudienceRoute = DashboardAudienceRouteImport.update({
-  id: '/audience',
-  path: '/audience',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -180,7 +174,6 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/brand-book/$slug': typeof BrandBookSlugRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
-  '/dashboard/audience': typeof DashboardAudienceRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/brand-dna-setup': typeof DashboardBrandDnaSetupRoute
   '/dashboard/brand-guideline': typeof DashboardBrandGuidelineRoute
@@ -208,7 +201,6 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/brand-book/$slug': typeof BrandBookSlugRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
-  '/dashboard/audience': typeof DashboardAudienceRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/brand-dna-setup': typeof DashboardBrandDnaSetupRoute
   '/dashboard/brand-guideline': typeof DashboardBrandGuidelineRoute
@@ -237,7 +229,6 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/brand-book/$slug': typeof BrandBookSlugRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
-  '/dashboard/audience': typeof DashboardAudienceRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/brand-dna-setup': typeof DashboardBrandDnaSetupRoute
   '/dashboard/brand-guideline': typeof DashboardBrandGuidelineRoute
@@ -267,7 +258,6 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/brand-book/$slug'
     | '/dashboard/analytics'
-    | '/dashboard/audience'
     | '/dashboard/billing'
     | '/dashboard/brand-dna-setup'
     | '/dashboard/brand-guideline'
@@ -295,7 +285,6 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/brand-book/$slug'
     | '/dashboard/analytics'
-    | '/dashboard/audience'
     | '/dashboard/billing'
     | '/dashboard/brand-dna-setup'
     | '/dashboard/brand-guideline'
@@ -323,7 +312,6 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/brand-book/$slug'
     | '/dashboard/analytics'
-    | '/dashboard/audience'
     | '/dashboard/billing'
     | '/dashboard/brand-dna-setup'
     | '/dashboard/brand-guideline'
@@ -476,13 +464,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardBillingRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/audience': {
-      id: '/dashboard/audience'
-      path: '/audience'
-      fullPath: '/dashboard/audience'
-      preLoaderRoute: typeof DashboardAudienceRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/analytics': {
       id: '/dashboard/analytics'
       path: '/analytics'
@@ -570,7 +551,6 @@ const DashboardCreativeRouteWithChildren =
 
 interface DashboardRouteChildren {
   DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
-  DashboardAudienceRoute: typeof DashboardAudienceRoute
   DashboardBillingRoute: typeof DashboardBillingRoute
   DashboardBrandDnaSetupRoute: typeof DashboardBrandDnaSetupRoute
   DashboardBrandGuidelineRoute: typeof DashboardBrandGuidelineRoute
@@ -588,7 +568,6 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAnalyticsRoute: DashboardAnalyticsRoute,
-  DashboardAudienceRoute: DashboardAudienceRoute,
   DashboardBillingRoute: DashboardBillingRoute,
   DashboardBrandDnaSetupRoute: DashboardBrandDnaSetupRoute,
   DashboardBrandGuidelineRoute: DashboardBrandGuidelineRoute,
