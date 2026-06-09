@@ -928,12 +928,12 @@ function AIPredictiveSegments({
 
 // ---------- Platform Reach Grid ----------
 const PLATFORM_COLORS: Record<string, string> = {
-  facebook: "#3B82F6",
-  tiktok: "#22C55E",
-  youtube: "#EF4444",
-  whatsapp: "#22C55E",
-  linkedin: "#3B82F6",
-  instagram: "#EC4899",
+  facebook: "#7C3AED",
+  tiktok: "#06B6D4",
+  youtube: "#EC4899",
+  whatsapp: "#34D399",
+  linkedin: "#67E8F9",
+  instagram: "#F472B6",
 };
 
 function CircularDial({ percent, color }: { percent: number; color: string }) {
