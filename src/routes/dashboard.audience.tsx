@@ -306,7 +306,7 @@ function TargetAudienceEngine(props: {
   selectedInterests: string[];
   onAddInterest: (id: string) => void;
   onRemoveInterest: (id: string) => void;
-  selectedPlatform: PlatformId;
+  selectedPlatform: PlatformId | null;
   onPlatformChange: (p: PlatformId) => void;
   selectedYear: "2025" | "2024" | "2023";
   onYearChange: (y: "2025" | "2024" | "2023") => void;
@@ -315,6 +315,7 @@ function TargetAudienceEngine(props: {
   showDropdown: boolean;
   onShowDropdown: (b: boolean) => void;
   filteredInterests: typeof INTEREST_CATEGORIES;
+  country: CountryData | null;
 }) {
   const {
     countries,
@@ -332,9 +333,9 @@ function TargetAudienceEngine(props: {
     showDropdown,
     onShowDropdown,
     filteredInterests,
+    country,
   } = props;
 
-  const country = audienceData[selectedCountry];
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
