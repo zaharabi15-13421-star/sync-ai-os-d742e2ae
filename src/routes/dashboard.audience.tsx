@@ -18,29 +18,29 @@ export const Route = createFileRoute("/dashboard/audience")({
   component: AudienceIntelligencePage,
 });
 
-// ---------- Design tokens (scoped to this page) ----------
+// ---------- Design tokens (BrandSync AI palette) ----------
 const TOKENS = {
-  bg: "#0F0F1A",
-  card: "#1A1A2E",
-  input: "#12122A",
-  border: "#2D2D4E",
+  bg: "#050816",
+  card: "rgba(18, 14, 38, 0.55)",
+  input: "rgba(10, 8, 24, 0.6)",
+  border: "rgba(124, 58, 237, 0.22)",
   purple: "#7C3AED",
-  purpleLight: "#A855F7",
-  text: "#E2E8F0",
-  muted: "#94A3B8",
-  label: "#64748B",
-  success: "#22C55E",
+  purpleLight: "#A78BFA",
+  text: "#F5F3FF",
+  muted: "#A5B4D4",
+  label: "#7A86A8",
+  success: "#34D399",
   warning: "#F59E0B",
-  danger: "#EF4444",
-  info: "#3B82F6",
+  danger: "#F472B6",
+  info: "#06B6D4",
 };
 
 type SourceKind = "DR" | "WB" | "AI" | "CALC";
 const SOURCE_META: Record<SourceKind, { color: string; bg: string; full: string }> = {
-  DR: { color: "#F59E0B", bg: "rgba(245,158,11,0.12)", full: "DataReportal 2025 · Annual benchmark" },
-  WB: { color: "#3B82F6", bg: "rgba(59,130,246,0.12)", full: "WorldBank API · Quarterly updated" },
-  AI: { color: "#A855F7", bg: "rgba(168,85,247,0.12)", full: "Claude AI estimate · Generated per query" },
-  CALC: { color: "#22C55E", bg: "rgba(34,197,94,0.12)", full: "Calculated from DR + WB combined" },
+  DR: { color: "#F0ABFC", bg: "rgba(236,72,153,0.14)", full: "DataReportal 2025 · Annual benchmark" },
+  WB: { color: "#67E8F9", bg: "rgba(6,182,212,0.14)", full: "WorldBank API · Quarterly updated" },
+  AI: { color: "#C4B5FD", bg: "rgba(124,58,237,0.18)", full: "Claude AI estimate · Generated per query" },
+  CALC: { color: "#6EE7B7", bg: "rgba(52,211,153,0.14)", full: "Calculated from DR + WB combined" },
 };
 
 function SourceTag({ kind, text }: { kind: SourceKind; text?: string }) {
@@ -214,8 +214,11 @@ function Header({ onExport }: { onExport: () => void }) {
         <button
           type="button"
           onClick={onExport}
-          className="inline-flex items-center gap-2 rounded-[10px] px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90"
-          style={{ background: TOKENS.purple }}
+          className="inline-flex items-center gap-2 rounded-[10px] px-4 py-2 text-[13px] font-medium text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
+          style={{
+            background: "linear-gradient(135deg, #7C3AED 0%, #9333EA 50%, #06B6D4 100%)",
+            boxShadow: "0 8px 24px -8px rgba(124,58,237,0.55)",
+          }}
         >
           <Download className="h-4 w-4" />
           Export Report
@@ -768,11 +771,11 @@ type Segment = {
 };
 
 const BADGE_STYLES: Record<Segment["badge"], { bg: string; color: string }> = {
-  GROWING: { bg: "#064E3B", color: "#6EE7B7" },
-  EMERGING: { bg: "#1E3A5F", color: "#60A5FA" },
-  OPPORTUNITY: { bg: "#2D1B4E", color: "#C084FC" },
-  STABLE: { bg: "#1E293B", color: "#94A3B8" },
-  SEASONAL: { bg: "#422006", color: "#FBBF24" },
+  GROWING: { bg: "rgba(52,211,153,0.15)", color: "#6EE7B7" },
+  EMERGING: { bg: "rgba(6,182,212,0.15)", color: "#67E8F9" },
+  OPPORTUNITY: { bg: "rgba(124,58,237,0.18)", color: "#C4B5FD" },
+  STABLE: { bg: "rgba(148,163,184,0.12)", color: "#CBD5E1" },
+  SEASONAL: { bg: "rgba(236,72,153,0.15)", color: "#F9A8D4" },
 };
 
 function scoreColor(score: number) {
@@ -928,12 +931,12 @@ function AIPredictiveSegments({
 
 // ---------- Platform Reach Grid ----------
 const PLATFORM_COLORS: Record<string, string> = {
-  facebook: "#3B82F6",
-  tiktok: "#22C55E",
-  youtube: "#EF4444",
-  whatsapp: "#22C55E",
-  linkedin: "#3B82F6",
-  instagram: "#EC4899",
+  facebook: "#7C3AED",
+  tiktok: "#06B6D4",
+  youtube: "#EC4899",
+  whatsapp: "#34D399",
+  linkedin: "#67E8F9",
+  instagram: "#F472B6",
 };
 
 function CircularDial({ percent, color }: { percent: number; color: string }) {
