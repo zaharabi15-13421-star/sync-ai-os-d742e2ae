@@ -757,3 +757,516 @@ function TransparencyFooter() {
     </div>
   );
 }
+
+// ---------- AI Predictive Segments ----------
+type Segment = {
+  name: string;
+  badge: "GROWING" | "EMERGING" | "OPPORTUNITY" | "STABLE" | "SEASONAL";
+  score: number;
+  count: number;
+  description: string;
+};
+
+const BADGE_STYLES: Record<Segment["badge"], { bg: string; color: string }> = {
+  GROWING: { bg: "#064E3B", color: "#6EE7B7" },
+  EMERGING: { bg: "#1E3A5F", color: "#60A5FA" },
+  OPPORTUNITY: { bg: "#2D1B4E", color: "#C084FC" },
+  STABLE: { bg: "#1E293B", color: "#94A3B8" },
+  SEASONAL: { bg: "#422006", color: "#FBBF24" },
+};
+
+function scoreColor(score: number) {
+  if (score >= 80) return TOKENS.success;
+  if (score >= 60) return TOKENS.warning;
+  return TOKENS.danger;
+}
+
+function AIPredictiveSegments({
+  country,
+  interestLabel,
+  platform,
+  metrics,
+}: {
+  country: CountryData;
+  interestLabel: string;
+  platform: PlatformId;
+  metrics: ReturnType<typeof calculateMetrics>;
+}) {
+  const social = country.socialMediaUsers;
+  const tt = country.platforms.tiktok;
+  const ig = country.platforms.instagram;
+  const fb = country.platforms.facebook;
+  const li = country.platforms.linkedin;
+
+  const segments: Segment[] = [
+    {
+      name: "Mobile-first Gen Z",
+      badge: "GROWING",
+      score: Math.min(95, Math.round(60 + tt.yoyGrowth)),
+      count: Math.round(tt.monthlyActiveUsers * 0.55),
+      description: `Driven by TikTok +${tt.yoyGrowth.toFixed(1)}% YoY (DR)`,
+    },
+    {
+      name: "Urban Millennials",
+      badge: "STABLE",
+      score: Math.min(90, Math.round(50 + metrics.internetPenetration * 0.4)),
+      count: Math.round(social * 0.32),
+      description: `${country.urbanPopulationPercent.toFixed(0)}% urban × DR social base`,
+    },
+    {
+      name: "Reels-native creators",
+      badge: "EMERGING",
+      score: Math.min(92, Math.round(55 + ig.yoyGrowth * 1.2)),
+      count: Math.round(ig.monthlyActiveUsers * 0.28),
+      description: `Instagram Reels +${ig.yoyGrowth.toFixed(1)}% YoY (DR)`,
+    },
+    {
+      name: "B2B decision-makers",
+      badge: "OPPORTUNITY",
+      score: Math.min(88, Math.round(45 + li.yoyGrowth * 2)),
+      count: Math.round(li.monthlyActiveUsers * 0.35),
+      description: `LinkedIn reach ${li.reachPercent.toFixed(1)}% (DR)`,
+    },
+    {
+      name: "Value-seeking shoppers",
+      badge: "SEASONAL",
+      score: Math.min(82, Math.round(40 + fb.engagementRate * 8)),
+      count: Math.round(fb.monthlyActiveUsers * 0.22),
+      description: `FB engagement ${fb.engagementRate}% (DR)`,
+    },
+  ];
+
+  const platforms: Array<{ name: string; cpm: number }> = [
+    { name: "WhatsApp", cpm: country.platforms.whatsapp.cpmUSD },
+    { name: "TikTok", cpm: tt.cpmUSD || Infinity },
+    { name: "Facebook", cpm: fb.cpmUSD },
+    { name: "Instagram", cpm: ig.cpmUSD },
+    { name: "YouTube", cpm: country.platforms.youtube.cpmUSD },
+  ].filter((p) => p.cpm > 0);
+  const cheapest = platforms.sort((a, b) => a.cpm - b.cpm)[0];
+  const topSeg = segments.slice().sort((a, b) => b.score - a.score)[0];
+  const insight = `Target ${topSeg.name} via ${cheapest.name} for lowest CPM ($${cheapest.cpm.toFixed(2)}) and ${interestLabel} reach in ${country.name}.`;
+
+  return (
+    <div
+      className="flex flex-col gap-3 rounded-2xl p-4"
+      style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}` }}
+    >
+      <div className="flex items-center justify-between">
+        <h2 className="text-[14px] font-semibold" style={{ color: TOKENS.text }}>
+          AI Predictive Segments
+        </h2>
+        <SourceTag kind="AI" />
+      </div>
+      <div className="flex flex-col gap-2">
+        {segments.map((s) => {
+          const c = scoreColor(s.score);
+          const badge = BADGE_STYLES[s.badge];
+          return (
+            <div
+              key={s.name}
+              className="rounded-xl p-3"
+              style={{ background: TOKENS.input, border: `1px solid ${TOKENS.border}` }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
+                  style={{ background: `${c}22`, border: `2px solid ${c}`, color: c }}
+                >
+                  {s.score}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[13px] font-medium" style={{ color: TOKENS.text }}>
+                      {s.name}
+                    </span>
+                    <span
+                      className="rounded-full px-2 py-[2px] text-[9px] font-semibold tracking-wide"
+                      style={{ background: badge.bg, color: badge.color }}
+                    >
+                      {s.badge}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11px]" style={{ color: TOKENS.muted }}>
+                    {s.description}
+                  </p>
+                </div>
+                <span className="text-[12px] font-semibold" style={{ color: TOKENS.text }}>
+                  {formatNumber(s.count)}
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 w-full rounded-full" style={{ background: TOKENS.border }}>
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${s.score}%`, background: c }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div
+        className="rounded-xl p-3"
+        style={{ background: TOKENS.input, borderLeft: `3px solid ${TOKENS.purple}` }}
+      >
+        <div className="text-[11px] font-semibold" style={{ color: TOKENS.purpleLight }}>
+          ✦ AI Insight
+        </div>
+        <p className="mt-1 text-[12px]" style={{ color: TOKENS.text }}>
+          {insight}
+        </p>
+        <div className="mt-2 flex flex-wrap gap-1">
+          <SourceTag kind="AI" />
+          <SourceTag kind="DR" text="CPM" />
+          <SourceTag kind="WB" text="population base" />
+        </div>
+      </div>
+      <input type="hidden" value={platform} readOnly />
+    </div>
+  );
+}
+
+// ---------- Platform Reach Grid ----------
+const PLATFORM_COLORS: Record<string, string> = {
+  facebook: "#3B82F6",
+  tiktok: "#22C55E",
+  youtube: "#EF4444",
+  whatsapp: "#22C55E",
+  linkedin: "#3B82F6",
+  instagram: "#EC4899",
+};
+
+function CircularDial({ percent, color }: { percent: number; color: string }) {
+  const size = 44;
+  const r = 18;
+  const c = 2 * Math.PI * r;
+  const filled = (Math.min(100, Math.max(0, percent)) / 100) * c;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={TOKENS.border} strokeWidth={4} />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth={4}
+        strokeDasharray={`${filled} ${c}`}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+      <text
+        x="50%"
+        y="50%"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize="10"
+        fontWeight="600"
+        fill={TOKENS.text}
+      >
+        {Math.round(percent)}%
+      </text>
+    </svg>
+  );
+}
+
+function PlatformReachGrid({ country, platform }: { country: CountryData; platform: PlatformId }) {
+  const items: Array<{ key: PlatformId; name: string }> = [
+    { key: "facebook", name: "Facebook" },
+    { key: "tiktok", name: "TikTok" },
+    { key: "youtube", name: "YouTube" },
+    { key: "whatsapp", name: "WhatsApp" },
+  ];
+  if (platform === "linkedin") items.push({ key: "linkedin", name: "LinkedIn" });
+
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+      {items.map(({ key, name }) => {
+        const isWhatsApp = key === "whatsapp";
+        const data = country.platforms[key];
+        const reachPercent = isWhatsApp
+          ? country.platforms.whatsapp.penetrationPercent
+          : (data as { reachPercent: number }).reachPercent;
+        const adReach = isWhatsApp
+          ? country.platforms.whatsapp.monthlyActiveUsers
+          : (data as { adReach: number }).adReach;
+        const color = PLATFORM_COLORS[key] ?? TOKENS.purple;
+        const active = platform === key;
+        const yoy = (data as { yoyGrowth: number }).yoyGrowth;
+
+        return (
+          <div
+            key={key}
+            className="rounded-2xl p-4"
+            style={{
+              background: TOKENS.card,
+              border: `1px solid ${active ? TOKENS.purple : TOKENS.border}`,
+              boxShadow: active ? `0 0 0 1px ${TOKENS.purple}` : undefined,
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-semibold" style={{ color: TOKENS.text }}>
+                {name}
+              </span>
+              <CircularDial percent={reachPercent} color={color} />
+            </div>
+            <div className="mt-3 space-y-1.5 text-[11px]">
+              <Row k="Ad Reach" v={formatNumber(adReach)} />
+              <Row k="CPM" v={`$${data.cpmUSD.toFixed(2)}`} />
+              <Row k="Best Format" v={data.bestFormat} />
+              <Row k="Peak Hours" v={data.peakHours} />
+              {!isWhatsApp && (
+                <>
+                  <Row k="Top Age" v={(data as { topAgeGroup: string }).topAgeGroup} />
+                  <Row
+                    k="Gender"
+                    v={`${(data as { genderMale: number }).genderMale}% M / ${(data as { genderFemale: number }).genderFemale}% F`}
+                  />
+                </>
+              )}
+              {isWhatsApp && (
+                <>
+                  <Row k="Open Rate" v={`${country.platforms.whatsapp.openRate}%`} />
+                  <Row k="CTR" v={`${country.platforms.whatsapp.ctr}%`} />
+                </>
+              )}
+              <div className="flex justify-between gap-2 py-0.5">
+                <span style={{ color: TOKENS.muted }}>YoY Growth</span>
+                <span style={{ color: yoy >= 0 ? TOKENS.success : TOKENS.danger }}>
+                  {yoy >= 0 ? "+" : ""}
+                  {yoy.toFixed(1)}%
+                </span>
+              </div>
+            </div>
+            <div className="mt-3">
+              <SourceTag kind="DR" text="DataReportal 2025" />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------- Internet Penetration Chart ----------
+function InternetPenetrationChart({
+  country,
+  wbPenetration,
+}: {
+  country: CountryData;
+  wbPenetration: number;
+}) {
+  const ceiling = Math.max(wbPenetration, 1);
+  const cities = country.topCities.slice(0, 7).map((c) => ({
+    name: c.name,
+    pct: Math.min(c.internetPenetrationEstimate, ceiling * 1.4),
+  }));
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}` }}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-[13px] font-semibold" style={{ color: TOKENS.text }}>
+          Internet Penetration by City
+        </h3>
+        <div className="flex gap-1">
+          <SourceTag kind="WB" />
+          <SourceTag kind="AI" />
+        </div>
+      </div>
+      <div className="space-y-2">
+        {cities.map((c) => (
+          <div key={c.name} className="flex items-center gap-2">
+            <span className="w-24 truncate text-[11px]" style={{ color: TOKENS.muted }}>
+              {c.name}
+            </span>
+            <div className="relative h-2 flex-1 rounded-full" style={{ background: TOKENS.border }}>
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${c.pct}%`, background: TOKENS.purple }}
+              />
+            </div>
+            <span className="w-10 text-right text-[11px] font-medium" style={{ color: TOKENS.text }}>
+              {c.pct.toFixed(0)}%
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[10px]" style={{ color: TOKENS.label }}>
+        🔵 WB national penetration × 🟣 AI city distribution
+      </p>
+    </div>
+  );
+}
+
+// ---------- Demographics Panel ----------
+function DemographicsPanel({ country, platform }: { country: CountryData; platform: PlatformId }) {
+  const ref =
+    platform === "all" || platform === "whatsapp"
+      ? country.platforms.facebook
+      : country.platforms[platform];
+
+  // Derive an age distribution from topAgeGroup (DR-aligned heuristic).
+  const ageBuckets = useMemo(() => {
+    const top = ref.topAgeGroup;
+    const weights: Record<string, number[]> = {
+      // [16-24, 25-34, 35-44, 45+]
+      "16–24": [50, 28, 14, 8],
+      "18–34": [28, 38, 22, 12],
+      "18–44": [22, 30, 28, 20],
+      "25–44": [14, 36, 32, 18],
+    };
+    return weights[top] ?? [25, 30, 25, 20];
+  }, [ref.topAgeGroup]);
+
+  const male = ref.genderMale || 50;
+  const female = ref.genderFemale || 50;
+  const urban = country.urbanPopulationPercent;
+  const rural = 100 - urban;
+
+  const bars: Array<{ label: string; value: number; color: string }> = [
+    { label: "Age 16–24", value: ageBuckets[0], color: TOKENS.purple },
+    { label: "Age 25–34", value: ageBuckets[1], color: TOKENS.purple },
+    { label: "Age 35–44", value: ageBuckets[2], color: TOKENS.purple },
+    { label: "Age 45+", value: ageBuckets[3], color: TOKENS.purple },
+    { label: "Male", value: male, color: TOKENS.info },
+    { label: "Female", value: female, color: "#EC4899" },
+    { label: "Urban", value: urban, color: TOKENS.success },
+    { label: "Rural", value: rural, color: TOKENS.warning },
+  ];
+
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}` }}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-[13px] font-semibold" style={{ color: TOKENS.text }}>
+          Audience Demographics
+        </h3>
+        <SourceTag kind="DR" />
+      </div>
+      <div className="space-y-2">
+        {bars.map((b) => (
+          <div key={b.label} className="flex items-center gap-2">
+            <span className="w-20 text-[11px]" style={{ color: TOKENS.muted }}>
+              {b.label}
+            </span>
+            <div className="relative h-2 flex-1 rounded-full" style={{ background: TOKENS.border }}>
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${Math.min(100, b.value)}%`, background: b.color }}
+              />
+            </div>
+            <span className="w-10 text-right text-[11px] font-medium" style={{ color: TOKENS.text }}>
+              {b.value.toFixed(0)}%
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[10px]" style={{ color: TOKENS.label }}>
+        🟡 DR platform demographics · 🔵 WB urban/rural split
+      </p>
+    </div>
+  );
+}
+
+// ---------- Conversion Matrix ----------
+function ConversionMatrix({ country, interestId }: { country: CountryData; interestId: string }) {
+  const interest = getInterest(interestId);
+  const cols: Array<{ name: string; engagement: number }> = [
+    { name: "Meta", engagement: country.platforms.facebook.engagementRate },
+    { name: "TikTok", engagement: country.platforms.tiktok.engagementRate },
+    { name: "WhatsApp", engagement: country.platforms.whatsapp.ctr },
+  ];
+  const rows: Array<{ name: string; multiplier: number }> = [
+    { name: "High", multiplier: 11 },
+    { name: "Mid", multiplier: 7.5 },
+    { name: "Emerging", multiplier: 4.5 },
+  ];
+
+  const interestBoost = Math.max(0.7, Math.min(1.4, interest.basePercent / 10));
+
+  const cell = (r: number, c: number) => {
+    const base = cols[c].engagement * rows[r].multiplier * interestBoost;
+    return Math.max(5, Math.min(95, Math.round(base)));
+  };
+
+  const colorFor = (v: number) => {
+    if (v >= 70) return TOKENS.success;
+    if (v >= 50) return TOKENS.warning;
+    return TOKENS.danger;
+  };
+
+  let best = { r: 0, c: 0, v: 0 };
+  for (let r = 0; r < rows.length; r += 1) {
+    for (let c = 0; c < cols.length; c += 1) {
+      const v = cell(r, c);
+      if (v > best.v) best = { r, c, v };
+    }
+  }
+
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}` }}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-[13px] font-semibold" style={{ color: TOKENS.text }}>
+          Platform Conversion Matrix
+        </h3>
+        <SourceTag kind="AI" />
+      </div>
+      <div className="grid grid-cols-4 gap-1 text-[11px]">
+        <div />
+        {cols.map((c) => (
+          <div key={c.name} className="text-center font-medium" style={{ color: TOKENS.muted }}>
+            {c.name}
+          </div>
+        ))}
+        {rows.map((r, ri) => (
+          <FragmentRow
+            key={r.name}
+            rowName={r.name}
+            cells={cols.map((_, ci) => ({ value: cell(ri, ci), color: colorFor(cell(ri, ci)) }))}
+          />
+        ))}
+      </div>
+      <div
+        className="mt-3 rounded-md px-2 py-1.5 text-[11px] font-medium"
+        style={{ background: `${TOKENS.success}22`, color: TOKENS.success }}
+      >
+        Best: {rows[best.r].name} × {cols[best.c].name} ({best.v}%)
+      </div>
+      <p className="mt-2 text-[10px]" style={{ color: TOKENS.label }}>
+        🟣 AI estimated · 🟡 DR CPM + reach base
+      </p>
+    </div>
+  );
+}
+
+function FragmentRow({
+  rowName,
+  cells,
+}: {
+  rowName: string;
+  cells: Array<{ value: number; color: string }>;
+}) {
+  return (
+    <>
+      <div className="flex items-center text-[11px] font-medium" style={{ color: TOKENS.muted }}>
+        {rowName}
+      </div>
+      {cells.map((c, i) => (
+        <div
+          key={i}
+          className="rounded-md py-2 text-center text-[12px] font-semibold"
+          style={{ background: `${c.color}22`, color: c.color, border: `1px solid ${c.color}44` }}
+        >
+          {c.value}%
+        </div>
+      ))}
+    </>
+  );
+}
