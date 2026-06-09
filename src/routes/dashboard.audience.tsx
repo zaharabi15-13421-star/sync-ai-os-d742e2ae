@@ -18,29 +18,29 @@ export const Route = createFileRoute("/dashboard/audience")({
   component: AudienceIntelligencePage,
 });
 
-// ---------- Design tokens (scoped to this page) ----------
+// ---------- Design tokens (BrandSync AI palette) ----------
 const TOKENS = {
-  bg: "#0F0F1A",
-  card: "#1A1A2E",
-  input: "#12122A",
-  border: "#2D2D4E",
+  bg: "#050816",
+  card: "rgba(18, 14, 38, 0.55)",
+  input: "rgba(10, 8, 24, 0.6)",
+  border: "rgba(124, 58, 237, 0.22)",
   purple: "#7C3AED",
-  purpleLight: "#A855F7",
-  text: "#E2E8F0",
-  muted: "#94A3B8",
-  label: "#64748B",
-  success: "#22C55E",
+  purpleLight: "#A78BFA",
+  text: "#F5F3FF",
+  muted: "#A5B4D4",
+  label: "#7A86A8",
+  success: "#34D399",
   warning: "#F59E0B",
-  danger: "#EF4444",
-  info: "#3B82F6",
+  danger: "#F472B6",
+  info: "#06B6D4",
 };
 
 type SourceKind = "DR" | "WB" | "AI" | "CALC";
 const SOURCE_META: Record<SourceKind, { color: string; bg: string; full: string }> = {
-  DR: { color: "#F59E0B", bg: "rgba(245,158,11,0.12)", full: "DataReportal 2025 · Annual benchmark" },
-  WB: { color: "#3B82F6", bg: "rgba(59,130,246,0.12)", full: "WorldBank API · Quarterly updated" },
-  AI: { color: "#A855F7", bg: "rgba(168,85,247,0.12)", full: "Claude AI estimate · Generated per query" },
-  CALC: { color: "#22C55E", bg: "rgba(34,197,94,0.12)", full: "Calculated from DR + WB combined" },
+  DR: { color: "#F0ABFC", bg: "rgba(236,72,153,0.14)", full: "DataReportal 2025 · Annual benchmark" },
+  WB: { color: "#67E8F9", bg: "rgba(6,182,212,0.14)", full: "WorldBank API · Quarterly updated" },
+  AI: { color: "#C4B5FD", bg: "rgba(124,58,237,0.18)", full: "Claude AI estimate · Generated per query" },
+  CALC: { color: "#6EE7B7", bg: "rgba(52,211,153,0.14)", full: "Calculated from DR + WB combined" },
 };
 
 function SourceTag({ kind, text }: { kind: SourceKind; text?: string }) {
