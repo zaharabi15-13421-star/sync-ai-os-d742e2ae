@@ -168,11 +168,27 @@ function AudienceIntelligencePage() {
         selectedYear={selectedYear}
       />
 
-      <GeoIntentMap
-        country={country}
-        interestPercent={metrics.interestPercent}
-        wbPenetration={metrics.internetPenetration}
-      />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <GeoIntentMap
+          country={country}
+          interestPercent={metrics.interestPercent}
+          wbPenetration={metrics.internetPenetration}
+        />
+        <AIPredictiveSegments
+          country={country}
+          interestLabel={interest.label}
+          platform={selectedPlatform}
+          metrics={metrics}
+        />
+      </div>
+
+      <PlatformReachGrid country={country} platform={selectedPlatform} />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <InternetPenetrationChart country={country} wbPenetration={metrics.internetPenetration} />
+        <DemographicsPanel country={country} platform={selectedPlatform} />
+        <ConversionMatrix country={country} interestId={selectedInterest} />
+      </div>
 
       <TransparencyFooter />
     </div>
