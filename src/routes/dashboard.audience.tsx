@@ -585,12 +585,11 @@ function GeoIntentMap({
   }, [country]);
 
   const project = (lat: number, lng: number) => {
-    const range = Math.max(bounds.maxLat - bounds.minLat, bounds.maxLng - bounds.minLng);
-    const cx = (bounds.minLng + bounds.maxLng) / 2;
-    const cy = (bounds.minLat + bounds.maxLat) / 2;
-    const x = ((lng - cx) / range) * 80 + 50; // 10-90%
-    const y = ((cy - lat) / range) * 80 + 50;
-    return { x: Math.max(8, Math.min(92, x)), y: Math.max(10, Math.min(90, y)) };
+    const rangeLat = bounds.maxLat - bounds.minLat || 1;
+    const rangeLng = bounds.maxLng - bounds.minLng || 1;
+    const x = ((lng - bounds.minLng) / rangeLng) * 92 + 4; // 4-96%
+    const y = ((bounds.maxLat - lat) / rangeLat) * 88 + 6; // 6-94%
+    return { x, y };
   };
 
   const cityRows = useMemo(
@@ -604,12 +603,13 @@ function GeoIntentMap({
         const score = Math.min(100, engagementScore);
         const growing = country.platforms.tiktok.yoyGrowth > 10 || country.platforms.instagram.yoyGrowth > 10;
         const peak = country.platforms.facebook.peakHours;
-        const size = 24 + Math.min(40, Math.log10(Math.max(10, people)) * 10);
+        const size = 18 + Math.min(28, Math.log10(Math.max(10, people)) * 6);
         const color = lerpColor(TOKENS.info, TOKENS.success, score / 100);
         return { city, people, fbPct, ttPct, score, growing, peak, size, color };
       }),
     [country, interestPercent, wbPenetration],
   );
+
 
   return (
     <div
