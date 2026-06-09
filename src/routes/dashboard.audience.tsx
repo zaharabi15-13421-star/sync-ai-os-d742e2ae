@@ -195,7 +195,7 @@ function AudienceIntelligencePage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <InternetPenetrationChart country={country} wbPenetration={metrics.internetPenetration} />
         <DemographicsPanel country={country} platform={selectedPlatform} />
-        <ConversionMatrix country={country} interestId={selectedInterest} />
+        <ConversionMatrix country={country} interestId={primaryInterestId} />
       </div>
 
       <TransparencyFooter />
