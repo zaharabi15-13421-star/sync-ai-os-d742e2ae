@@ -507,16 +507,6 @@ function RegisterScreen({ onBack, onDone }: { onBack: () => void; onDone: (email
       </header>
 
       <div className="space-y-4">
-        <TextField
-          label="Company or brand name"
-          required
-          autoFocus
-          placeholder="Acme Corporation"
-          value={v.companyName}
-          onChange={(e) => setField("companyName", e.target.value)}
-          error={errors.companyName}
-          valid={!errors.companyName && sanitizeText(v.companyName).length >= 2}
-        />
         <div ref={emailRef}>
           <EmailField
             value={email.emailValue}
