@@ -419,7 +419,7 @@ function TargetAudienceEngine(props: {
                     )}
                   </span>
                   <span className="flex items-center gap-2 text-[11px]" style={{ color: TOKENS.muted }}>
-                    ~{formatNumber(audSize)} {trendIcon}
+                    {reachBase > 0 ? `~${formatNumber(audSize)}` : ""} {trendIcon}
                   </span>
                 </button>
               );
