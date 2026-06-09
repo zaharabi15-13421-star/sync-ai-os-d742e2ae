@@ -11,6 +11,8 @@ import {
   calculateMetrics,
   formatNumber,
   getInterest,
+  type DateRangePreset,
+  type CustomDateRange,
 } from "@/services/audienceCalculator";
 import type { PlatformId, WorldBankData } from "@/types/audience";
 
