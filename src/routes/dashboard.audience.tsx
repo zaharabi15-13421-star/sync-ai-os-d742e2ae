@@ -334,7 +334,7 @@ function TargetAudienceEngine(props: {
               onShowDropdown(true);
             }}
             onFocus={() => onShowDropdown(true)}
-            placeholder="Search any interest, behavior, or demographic (e.g. yoga, crypto, SaaS founders, luxury travel)"
+            placeholder="Search any interest, behavior, or demographic (e.g. yoga, fitness, SaaS founders, luxury travel)"
             className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[12px]"
             style={{ color: TOKENS.text }}
           />
