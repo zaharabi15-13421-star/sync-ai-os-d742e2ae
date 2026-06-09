@@ -1227,26 +1227,27 @@ function InternetPenetrationChart({
 
 // ---------- Demographics Panel ----------
 function DemographicsPanel({ country, platform }: { country: CountryData; platform: PlatformId }) {
+  // Platform-specific age distributions ensure tab switches visibly shift demographics.
+  const AGE_BY_PLATFORM: Record<string, [number, number, number, number]> = {
+    all:       [28, 38, 22, 12],
+    facebook:  [18, 35, 28, 19],
+    instagram: [32, 38, 20, 10],
+    tiktok:    [45, 32, 16,  7],
+    youtube:   [24, 36, 25, 15],
+    whatsapp:  [20, 40, 28, 12],
+    linkedin:  [ 8, 42, 34, 16],
+  };
+  const ageBuckets = AGE_BY_PLATFORM[platform] ?? AGE_BY_PLATFORM.all;
+
   const ref =
     platform === "all" || platform === "whatsapp"
       ? country.platforms.facebook
       : (country.platforms[platform as Exclude<PlatformId, "all" | "whatsapp">] as import("@/data/audienceIntelligenceData").PlatformData);
 
-  // Derive an age distribution from topAgeGroup (DR-aligned heuristic).
-  const ageBuckets = useMemo(() => {
-    const top = ref.topAgeGroup;
-    const weights: Record<string, number[]> = {
-      // [16-24, 25-34, 35-44, 45+]
-      "16–24": [50, 28, 14, 8],
-      "18–34": [28, 38, 22, 12],
-      "18–44": [22, 30, 28, 20],
-      "25–44": [14, 36, 32, 18],
-    };
-    return weights[top] ?? [25, 30, 25, 20];
-  }, [ref.topAgeGroup]);
-
-  const male = ref.genderMale || 50;
-  const female = ref.genderFemale || 50;
+  const male = platform === "all"
+    ? Math.round((country.platforms.facebook.genderMale + country.platforms.instagram.genderMale + country.platforms.tiktok.genderMale + country.platforms.youtube.genderMale) / 4)
+    : ref.genderMale || 50;
+  const female = 100 - male;
   const urban = country.urbanPopulationPercent;
   const rural = 100 - urban;
 
