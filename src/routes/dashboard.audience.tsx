@@ -1105,7 +1105,7 @@ function DemographicsPanel({ country, platform }: { country: CountryData; platfo
   const ref =
     platform === "all" || platform === "whatsapp"
       ? country.platforms.facebook
-      : country.platforms[platform];
+      : (country.platforms[platform as Exclude<PlatformId, "all" | "whatsapp">] as import("@/data/audienceIntelligenceData").PlatformData);
 
   // Derive an age distribution from topAgeGroup (DR-aligned heuristic).
   const ageBuckets = useMemo(() => {
