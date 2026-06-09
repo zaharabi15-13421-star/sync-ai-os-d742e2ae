@@ -447,7 +447,7 @@ function TargetAudienceEngine(props: {
               <button
                 key={y}
                 type="button"
-                onClick={() => onYearChange(y)}
+                onClick={() => onYearChange(active ? "" : y)}
                 className="rounded-full px-3 py-1.5 text-[12px] font-medium"
                 style={{
                   background: active ? TOKENS.purple : TOKENS.input,
