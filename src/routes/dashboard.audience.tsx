@@ -104,8 +104,8 @@ function AudienceIntelligencePage() {
   }, [country.iso2]);
 
   const metrics = useMemo(
-    () => calculateMetrics(country, effectivePlatform, primaryInterestId, wbError ? null : wbData),
-    [country, effectivePlatform, primaryInterestId, wbData, wbError],
+    () => calculateMetrics(country, effectivePlatform, selectedInterests, wbError ? null : wbData, dateRange, customRange),
+    [country, effectivePlatform, selectedInterests, wbData, wbError, dateRange, customRange],
   );
 
 
