@@ -58,10 +58,10 @@ function SourceTag({ kind, text }: { kind: SourceKind; text?: string }) {
 
 // ---------- Page ----------
 function AudienceIntelligencePage() {
-  const [selectedCountry, setSelectedCountry] = useState<string>("");
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [selectedPlatform, setSelectedPlatform] = useState<PlatformId | "">("");
-  const [selectedYear, setSelectedYear] = useState<"2025" | "2024" | "2023" | "">("");
+  const [selectedCountry, setSelectedCountry] = useState<string>("BD");
+  const [selectedInterests, setSelectedInterests] = useState<string[]>(["fitness"]);
+  const [selectedPlatform, setSelectedPlatform] = useState<PlatformId | "">("all");
+  const [selectedYear, setSelectedYear] = useState<"2025" | "2024" | "2023" | "">("2025");
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
