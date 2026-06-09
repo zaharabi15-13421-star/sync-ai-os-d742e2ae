@@ -59,7 +59,7 @@ function SourceTag({ kind, text }: { kind: SourceKind; text?: string }) {
 // ---------- Page ----------
 function AudienceIntelligencePage() {
   const [selectedCountry, setSelectedCountry] = useState("BD");
-  const [selectedInterest, setSelectedInterest] = useState("business");
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformId>("all");
   const [selectedYear, setSelectedYear] = useState<"2025" | "2024" | "2023">("2025");
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,7 +70,10 @@ function AudienceIntelligencePage() {
   const [wbError, setWbError] = useState(false);
 
   const country: CountryData = audienceData[selectedCountry] ?? audienceData.BD;
-  const interest = getInterest(selectedInterest);
+  // Use first selected interest for metric calculations; fall back to a neutral baseline when none selected.
+  const primaryInterestId = selectedInterests[0] ?? "business";
+  const interest = getInterest(primaryInterestId);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -92,9 +95,10 @@ function AudienceIntelligencePage() {
   }, [country.iso2]);
 
   const metrics = useMemo(
-    () => calculateMetrics(country, selectedPlatform, selectedInterest, wbError ? null : wbData),
-    [country, selectedPlatform, selectedInterest, wbData, wbError],
+    () => calculateMetrics(country, selectedPlatform, primaryInterestId, wbError ? null : wbData),
+    [country, selectedPlatform, primaryInterestId, wbData, wbError],
   );
+
 
   const filteredInterests = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -140,16 +144,20 @@ function AudienceIntelligencePage() {
         countries={Object.values(audienceData)}
         selectedCountry={selectedCountry}
         onCountryChange={setSelectedCountry}
-        selectedInterest={selectedInterest}
-        onInterestChange={(id) => {
-          setSelectedInterest(id);
+        selectedInterests={selectedInterests}
+        onAddInterest={(id) => {
+          setSelectedInterests((prev) => (prev.includes(id) ? prev : [...prev, id]));
           setSearchQuery("");
           setShowDropdown(false);
         }}
+        onRemoveInterest={(id) =>
+          setSelectedInterests((prev) => prev.filter((x) => x !== id))
+        }
         selectedPlatform={selectedPlatform}
         onPlatformChange={setSelectedPlatform}
         selectedYear={selectedYear}
         onYearChange={setSelectedYear}
+
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         showDropdown={showDropdown}
@@ -187,7 +195,7 @@ function AudienceIntelligencePage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <InternetPenetrationChart country={country} wbPenetration={metrics.internetPenetration} />
         <DemographicsPanel country={country} platform={selectedPlatform} />
-        <ConversionMatrix country={country} interestId={selectedInterest} />
+        <ConversionMatrix country={country} interestId={primaryInterestId} />
       </div>
 
       <TransparencyFooter />
@@ -238,8 +246,9 @@ function TargetAudienceEngine(props: {
   countries: CountryData[];
   selectedCountry: string;
   onCountryChange: (v: string) => void;
-  selectedInterest: string;
-  onInterestChange: (id: string) => void;
+  selectedInterests: string[];
+  onAddInterest: (id: string) => void;
+  onRemoveInterest: (id: string) => void;
   selectedPlatform: PlatformId;
   onPlatformChange: (p: PlatformId) => void;
   selectedYear: "2025" | "2024" | "2023";
@@ -254,8 +263,9 @@ function TargetAudienceEngine(props: {
     countries,
     selectedCountry,
     onCountryChange,
-    selectedInterest,
-    onInterestChange,
+    selectedInterests,
+    onAddInterest,
+    onRemoveInterest,
     selectedPlatform,
     onPlatformChange,
     selectedYear,
@@ -267,7 +277,6 @@ function TargetAudienceEngine(props: {
     filteredInterests,
   } = props;
 
-  const interest = getInterest(selectedInterest);
   const country = audienceData[selectedCountry];
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -293,93 +302,111 @@ function TargetAudienceEngine(props: {
       className="rounded-2xl p-5 space-y-4"
       style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}` }}
     >
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-        <div ref={wrapRef} className="relative">
+      {/* Search box (full width) */}
+      <div ref={wrapRef} className="relative">
+        <div
+          className="flex items-center gap-2 rounded-[10px] px-3 py-2.5"
+          style={{ background: TOKENS.input, border: `1px solid ${TOKENS.border}` }}
+        >
+          <Search className="h-4 w-4" style={{ color: TOKENS.muted }} />
+          <input
+            value={searchQuery}
+            onChange={(e) => {
+              onSearchChange(e.target.value);
+              onShowDropdown(true);
+            }}
+            onFocus={() => onShowDropdown(true)}
+            placeholder="Search any interest, behavior, or demographic (e.g. yoga, crypto, SaaS founders, luxury travel)"
+            className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[12px]"
+            style={{ color: TOKENS.text }}
+          />
+        </div>
+        {showDropdown && (
           <div
-            className="flex items-center gap-2 rounded-[10px] px-3 py-2.5"
-            style={{ background: TOKENS.input, border: `1px solid ${TOKENS.border}` }}
+            className="absolute z-30 mt-1 max-h-72 w-full overflow-auto rounded-[10px] shadow-xl"
+            style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}` }}
           >
-            <Search className="h-4 w-4" style={{ color: TOKENS.muted }} />
-            <input
-              value={searchQuery}
-              onChange={(e) => {
-                onSearchChange(e.target.value);
-                onShowDropdown(true);
-              }}
-              onFocus={() => onShowDropdown(true)}
-              placeholder="Search any interest, behavior, or demographic (e.g. yoga, crypto, SaaS founders, luxury travel)"
-              className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[12px]"
-              style={{ color: TOKENS.text }}
-            />
-          </div>
-          {showDropdown && (
-            <div
-              className="absolute z-30 mt-1 max-h-72 w-full overflow-auto rounded-[10px] shadow-xl"
-              style={{ background: TOKENS.card, border: `1px solid ${TOKENS.border}` }}
-            >
-              {filteredInterests.length === 0 && (
-                <div className="px-3 py-2 text-[12px]" style={{ color: TOKENS.muted }}>
-                  No matching interests
-                </div>
-              )}
-              {filteredInterests.map((i) => {
-                const reachBase = country.socialMediaUsers;
-                const audSize = Math.round((reachBase * i.basePercent) / 100);
-                const trendIcon =
-                  i.trend === "growing" ? (
-                    <TrendingUp className="h-3 w-3" style={{ color: TOKENS.success }} />
-                  ) : i.trend === "declining" ? (
-                    <TrendingDown className="h-3 w-3" style={{ color: TOKENS.danger }} />
-                  ) : (
-                    <Minus className="h-3 w-3" style={{ color: TOKENS.muted }} />
-                  );
-                return (
-                  <button
-                    key={i.id}
-                    type="button"
-                    onClick={() => onInterestChange(i.id)}
-                    className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] hover:bg-white/5"
-                    style={{ color: TOKENS.text }}
-                  >
-                    <span>{i.label}</span>
-                    <span className="flex items-center gap-2 text-[11px]" style={{ color: TOKENS.muted }}>
-                      ~{formatNumber(audSize)} {trendIcon}
-                    </span>
-                  </button>
+            {filteredInterests.length === 0 && (
+              <div className="px-3 py-2 text-[12px]" style={{ color: TOKENS.muted }}>
+                No matching interests
+              </div>
+            )}
+            {filteredInterests.map((i) => {
+              const reachBase = country.socialMediaUsers;
+              const audSize = Math.round((reachBase * i.basePercent) / 100);
+              const alreadySelected = selectedInterests.includes(i.id);
+              const trendIcon =
+                i.trend === "growing" ? (
+                  <TrendingUp className="h-3 w-3" style={{ color: TOKENS.success }} />
+                ) : i.trend === "declining" ? (
+                  <TrendingDown className="h-3 w-3" style={{ color: TOKENS.danger }} />
+                ) : (
+                  <Minus className="h-3 w-3" style={{ color: TOKENS.muted }} />
                 );
-              })}
-            </div>
-          )}
+              return (
+                <button
+                  key={i.id}
+                  type="button"
+                  disabled={alreadySelected}
+                  onClick={() => onAddInterest(i.id)}
+                  className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] hover:bg-white/5 disabled:opacity-50"
+                  style={{ color: TOKENS.text }}
+                >
+                  <span>
+                    {i.label}
+                    {alreadySelected && (
+                      <span className="ml-2 text-[10px]" style={{ color: TOKENS.muted }}>
+                        (added)
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex items-center gap-2 text-[11px]" style={{ color: TOKENS.muted }}>
+                    ~{formatNumber(audSize)} {trendIcon}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-          {selectedInterest && (
-            <div className="mt-2 flex items-center gap-2">
+      {/* Selected interest tags */}
+      {selectedInterests.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedInterests.map((id) => {
+            const it = getInterest(id);
+            return (
               <span
+                key={id}
                 className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[12px] font-medium text-white"
                 style={{ background: TOKENS.purple }}
               >
-                {interest.label}
+                {it.label}
                 <button
                   type="button"
-                  onClick={() => onInterestChange("business")}
+                  onClick={() => onRemoveInterest(id)}
                   className="opacity-80 hover:opacity-100"
-                  aria-label="Remove"
+                  aria-label={`Remove ${it.label}`}
                 >
                   <X className="h-3 w-3" />
                 </button>
               </span>
-            </div>
-          )}
+            );
+          })}
         </div>
+      )}
 
+      {/* Country selector + platform pills + year pills */}
+      <div className="flex flex-wrap items-center gap-3">
         <select
           value={selectedCountry}
           onChange={(e) => onCountryChange(e.target.value)}
-          className="rounded-[10px] px-3 py-2.5 text-[13px] outline-none"
+          className="rounded-[10px] px-3 py-2 text-[13px] outline-none"
           style={{
             background: TOKENS.input,
             border: `1px solid ${TOKENS.border}`,
             color: TOKENS.text,
-            minWidth: 220,
+            minWidth: 200,
           }}
         >
           {countries.map((c) => (
@@ -388,9 +415,7 @@ function TargetAudienceEngine(props: {
             </option>
           ))}
         </select>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-4">
         <div className="flex flex-wrap gap-1.5">
           {platforms.map((p) => {
             const active = selectedPlatform === p.id;
@@ -411,6 +436,7 @@ function TargetAudienceEngine(props: {
             );
           })}
         </div>
+
         <div className="flex items-center gap-1.5">
           {(["2025", "2024", "2023"] as const).map((y) => {
             const active = selectedYear === y;
@@ -431,6 +457,7 @@ function TargetAudienceEngine(props: {
             );
           })}
         </div>
+
         <span className="text-[11px]" style={{ color: TOKENS.label }}>
           DataReportal publishes annual reports each January
         </span>
@@ -438,6 +465,7 @@ function TargetAudienceEngine(props: {
     </div>
   );
 }
+
 
 // ---------- Stats Row ----------
 function StatsRow(props: {
