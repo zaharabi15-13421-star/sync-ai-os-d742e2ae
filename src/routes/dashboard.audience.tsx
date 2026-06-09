@@ -325,7 +325,7 @@ function TargetAudienceEngine(props: {
     filteredInterests,
   } = props;
 
-  const country = audienceData[selectedCountry];
+  const country = selectedCountry ? audienceData[selectedCountry] : undefined;
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
